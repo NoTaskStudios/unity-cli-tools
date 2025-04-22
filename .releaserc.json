@@ -1,0 +1,54 @@
+{
+  "tagFormat": "${version}",
+  "preset": "angular",
+  "branches": [
+    "master",
+    {
+      "name": "release/v*",
+      "prerelease": "rc",
+      "channel": "rc"
+    }
+  ],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    "@semantic-release/changelog",
+    [
+      "@semantic-release/npm",
+      {
+        "npmPublish": true,
+        "tarballDir": "dist-tar"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "package.json",
+          "package-lock.json",
+          "CHANGELOG.md"
+        ],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ],
+    [
+      "@semantic-release/github",
+      {
+        "assets": [
+          {
+            "path": "dist-tar/*.tgz",
+            "label": "Distribution files (tgz)"
+          },
+          {
+            "path": "dist-esm.zip",
+            "label": "Distribution files (dist-esm)"
+          },
+          {
+            "path": "dist-cjs.zip",
+            "label": "Distribution files (dist-cjs)"
+          }
+        ]
+      }
+    ]
+  ]
+}

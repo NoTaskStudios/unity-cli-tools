@@ -1,0 +1,13 @@
+# Source
+src/
+
+# Tests
+*.test.js
+*.spec.js
+coverage/
+jest.config.js
+
+.github/
+tsconfig.json
+tsconfig.cjs.json
+.releaserc.json
