@@ -66,8 +66,8 @@ jobs:
           scope: ${GITHUB_REPOSITORY_OWNER}
           always-auth: true
       - run: |
-          echo "@NoTaskStudios:registry=https://npm.pkg.github.com" >> ~/.npmrc
-          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
+          echo "@NoTaskStudios:registry=https://npm.pkg.github.com" > .npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
           npm pkg set name="@${{ github.repository }}"
           npm pkg fix
       - run: npm publish --access public
