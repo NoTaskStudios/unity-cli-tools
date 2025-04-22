@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - master
+      - release/*
+
+permissions:
+  packages: write
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup Git Bot
+        run: |
+          git config --local user.email "contact@notask.com"
+          git config --local user.name "notask-bot"
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+      - run: npm ci
+      - run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Create Dist Archive
+        shell: bash
+        run: |
+          zip -r dist-esm.zip dist 
+          zip -r dist-cjs.zip dist-cjs
+
+      - name: Setup Node.js with GitHub Packages
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          registry-url: https://registry.npmjs.org/
+          always-auth: true
+
+      - name: Release to npm
+        run: npx semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Setup Node.js with GitHub Packages
+        uses: actions/setup-node@v4
+        with:
+          node-version: "lts/*"
+          registry-url: https://npm.pkg.github.com/
+          scope: ${GITHUB_REPOSITORY_OWNER}
+          always-auth: true
+      - run: |
+          echo "@NoTaskStudios:registry=https://npm.pkg.github.com" >> ~/.npmrc
+          echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" > ~/.npmrc
+          npm pkg set name="@$PACKAGE_NAME"
+          npm pkg fix
+      - run: npm publish --access public
+        env:
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          PACKAGE_NAME: ${{ github.repository }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
