@@ -220,7 +220,7 @@ class UnityHub {
   /**
    * Adds modules to an existing Unity installation
    * @param {string} editorVersion - Unity version to add modules to (e.g. "2022.3.60f1")
-   * @param {ModuleId[]} moduleId - Array of module IDs to add
+   * @param {ModuleId[]} modules - Array of module IDs to add
    * @param {boolean} [childModules=false] - Whether to include child modules
    * @returns {Promise<void>} Resolves when modules are added successfully
    * @throws Will throw an error if module addition fails
@@ -228,17 +228,17 @@ class UnityHub {
    */
   public static async addModule(
     editorVersion: string,
-    moduleId: ModuleId[],
+    modules: ModuleId[],
     childModules: boolean = false
   ): Promise<void> {
     try {
-      console.debug(`Adding module ${moduleId} to Unity ${editorVersion}`);
+      console.debug(`Adding module ${modules} to Unity ${editorVersion}`);
 
       const args = ["install-modules", "-v", editorVersion];
 
-      if (moduleId.length > 0) {
+      if (modules.length > 0) {
         args.push("--module");
-        args.push(moduleId.join(" "));
+        args.push(modules.join(" "));
       } else {
         throw new Error("No module IDs provided.");
       }
@@ -257,7 +257,7 @@ class UnityHub {
         console.warn(`Add module command warning/error: ${stderr}`);
       }
     } catch (error) {
-      console.error(`Error adding module ${moduleId} to Unity ${editorVersion}:`, error);
+      console.error(`Error adding module ${modules} to Unity ${editorVersion}:`, error);
       throw error;
     }
   }
