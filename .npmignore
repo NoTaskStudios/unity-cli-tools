@@ -1,5 +1,7 @@
 # Source
 src/
+test/
+node_modules/
 
 # Tests
 *.test.js
@@ -11,3 +13,9 @@ jest.config.js
 tsconfig.json
 tsconfig.cjs.json
 .releaserc.json
+.prettierrc.json
+.prettierrc
+.nvmrc
+.eslintrc.json
+eslint.config.js
+.eslintignore
