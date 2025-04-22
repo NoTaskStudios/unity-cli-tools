@@ -5,7 +5,7 @@ A TypeScript library for programmatically interacting with Unity Hub and Unity E
 ## Installation
 
 ```bash
-npm install unity-cli-tools
+npm install @notask/unity-cli-tools
 ```
 
 ## Dual Module Support
