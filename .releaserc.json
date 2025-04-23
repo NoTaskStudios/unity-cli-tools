@@ -5,7 +5,8 @@
     "master",
     {
       "name": "release/v*",
-      "prerelease": "rc",
+      "type": "prerelease",
+      "prerelease": true,
       "channel": "rc"
     }
   ],
