@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.0...1.0.1) (2025-04-23)
+
+
+### Bug Fixes
+
+* **Build:** outputting correct output folder ([8c20b2c](https://github.com/NoTaskStudios/unity-cli-tools/commit/8c20b2c6db2ff83fc37e88ce8e95fc3fce816418))
+
 # 1.0.0 (2025-04-22)
 
 
