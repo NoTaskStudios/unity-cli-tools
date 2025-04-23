@@ -34,6 +34,7 @@ jobs:
         with:
           node-version: "lts/*"
       - run: npm ci
+      - run: npm run format
       - run: npm test
 
       - name: Build
@@ -42,8 +43,8 @@ jobs:
       - name: Create Dist Archive
         shell: bash
         run: |
-          zip -r dist-esm.zip dist 
-          zip -r dist-cjs.zip dist-cjs
+          zip -r dist-esm.zip dist/esm 
+          zip -r dist-cjs.zip dist/cjs
 
       - name: Setup Node.js with GitHub Packages
         uses: actions/setup-node@v4

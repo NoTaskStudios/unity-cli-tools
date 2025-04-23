@@ -1,7 +1,6 @@
 # Source
 src/
-test/
-node_modules/
+scripts/
 
 # Tests
 *.test.js
@@ -9,13 +8,23 @@ node_modules/
 coverage/
 jest.config.js
 
+# Repository
 .github/
+
+# Typescript
 tsconfig.json
 tsconfig.cjs.json
+
+# Linting
 .releaserc.json
 .prettierrc.json
 .prettierrc
-.nvmrc
 .eslintrc.json
 eslint.config.js
 .eslintignore
+
+# Versioning
+.nvmrc
+
+# Build Packing
+*.zip
