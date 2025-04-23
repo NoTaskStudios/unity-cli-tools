@@ -1,3 +1,11 @@
+## [1.0.2](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.1...1.0.2) (2025-04-23)
+
+
+### Bug Fixes
+
+* **Build:** wrong modules references ([c5ec8c3](https://github.com/NoTaskStudios/unity-cli-tools/commit/c5ec8c3e295b147703bd07029d28e081daf78c86))
+* **Hub:** way to get hub versions by filtering ([ae7b497](https://github.com/NoTaskStudios/unity-cli-tools/commit/ae7b49742c64c816b3b147ef7feeebf5386ca54c))
+
 ## [1.0.1](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.0...1.0.1) (2025-04-23)
 
 
