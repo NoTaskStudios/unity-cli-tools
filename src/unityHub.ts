@@ -189,13 +189,18 @@ class UnityHub {
   }
 
   /**
-   * Gets all installed Unity versions with their installation paths
+   * Gets all installed Unity versions with their installation paths, if using filter you can get all available releases instead of only installed ones
+   * @param {string} [filter="i"] - Filter for installations (e.g. "i" for installed ( both available releases and Editors installed on your machine ), "a" for all and "r" for available releases)
    * @returns {Promise<UnityInstallations>} Object mapping Unity versions to their installation paths
    * @throws Will throw an error if command execution fails or no installations are found
    * @public
    */
-  public static async getUnityInstallations(): Promise<UnityInstallations> {
-    const { stdout, stderr } = await this.execUnityHubCommand(["editors", "-i"], {
+  public static async getUnityInstallations(filter: string = "i"): Promise<UnityInstallations> {
+    if (!["i", "a", "r"].includes(filter)) {
+      throw new Error(`Invalid filter "${filter}". Use "i" for installed, "a" for all, or "r" for available releases.`);
+    }
+
+    const { stdout, stderr } = await this.execUnityHubCommand(["editors", `-${filter}`], {
       reject: false,
     });
 
