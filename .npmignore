@@ -27,4 +27,5 @@ eslint.config.js
 .nvmrc
 
 # Build Packing
+dist-tar/
 *.zip
