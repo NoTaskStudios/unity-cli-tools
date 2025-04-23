@@ -2,7 +2,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const outDir = path.resolve(__dirname, "..", "dist-cjs");
+const outDir = path.resolve(__dirname, "..", "dist/cjs");
 fs.mkdirSync(outDir, { recursive: true });
 
 const pkg = { type: "commonjs" };
