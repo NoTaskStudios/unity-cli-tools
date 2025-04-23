@@ -41,11 +41,11 @@
           },
           {
             "path": "dist-esm.zip",
-            "label": "Distribution files (dist-esm)"
+            "label": "unity-cli-tools.esm.zip"
           },
           {
             "path": "dist-cjs.zip",
-            "label": "Distribution files (dist-cjs)"
+            "label": "unity-cli-tools.cjs.zip"
           }
         ]
       }
