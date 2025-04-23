@@ -13,7 +13,7 @@
       "./node_modules/@types"
     ] /* Specify multiple folders that act like 'node_modules' for type lookup. */,
     "declaration": true /* Generate .d.ts files from TypeScript and JavaScript files in your project. */,
-    "outDir": "./dist" /* Specify an output folder for all emitted files. */,
+    "outDir": "./dist/esm" /* Specify an output folder for all emitted files. */,
     "removeComments": true /* Disable emitting comments. */,
     "stripInternal": true /* Disable emitting declarations that have '@internal' in their JSDoc comments. */,
     "isolatedModules": true /* Ensure that each file can be safely transpiled without relying on other imports. */,
