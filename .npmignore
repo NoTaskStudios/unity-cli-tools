@@ -29,3 +29,4 @@ eslint.config.js
 # Build Packing
 dist-tar/
 *.zip
+*.tar

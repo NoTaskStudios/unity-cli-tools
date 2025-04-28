@@ -21,7 +21,7 @@
     "url": "https://github.com/NoTaskStudios/unity-cli-tools.git"
   },
   "scripts": {
-    "clean": "rimraf dist dist-cjs",
+    "clean": "rimraf dist",
     "build": "npm run clean && npm run build:esm && npm run build:cjs",
     "build:esm": "tsc --project tsconfig.json",
     "build:cjs": "tsc --project tsconfig.cjs.json && node scripts/write-cjs-package.cjs",
