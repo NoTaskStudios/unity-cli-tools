@@ -1,3 +1,11 @@
+## [1.0.3](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.2...1.0.3) (2025-04-28)
+
+
+### Bug Fixes
+
+* change type naming ([0e32839](https://github.com/NoTaskStudios/unity-cli-tools/commit/0e32839146eaa6072dd5f5c54e01033b9a7e1ab6))
+* **Editor:** fix logging sensitive information ([504d4b6](https://github.com/NoTaskStudios/unity-cli-tools/commit/504d4b6caaaa62278c68f13193d8a46c38bb3df1))
+
 ## [1.0.2](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.1...1.0.2) (2025-04-23)
 
 
