@@ -7,7 +7,7 @@ import {
   UnityHubProject,
   UnityHubProjectsList,
   UnityInstallations,
-  UnityLanguages,
+  UnityEditorLanguages,
   UnityModules,
 } from "./types/unity.js";
 import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
@@ -49,26 +49,26 @@ class UnityHub {
    * Available Unity language packs
    * @public
    */
-  public static readonly Languages = UnityLanguages;
+  public static readonly Languages = UnityEditorLanguages;
 
   /**
    * Current platform (win32, darwin, linux)
-   * @private
+   * @internal
    */
   private static platform: string = os.platform() as keyof typeof UnityHub.CONFIG_PATHS;
 
   /**
    * Path to Unity Hub executable
-   * @private
+   * @internal
    */
   private static hubPath: string = this.getUnityHubPath();
 
   /**
    * Gets the Unity Hub executable path based on environment variable or default locations
    * @returns {string} Path to Unity Hub executable
-   * @private
+   * @public
    */
-  private static getUnityHubPath(): string {
+  public static getUnityHubPath(): string {
     const envPath = process.env.UNITY_HUB_PATH ?? "";
     if (envPath && fs.existsSync(envPath)) {
       return envPath;
@@ -80,7 +80,7 @@ class UnityHub {
   /**
    * Gets the path to the Unity Hub projects JSON file
    * @returns {string} Path to projects file
-   * @private
+   * @internal
    */
   private static getProjectsPath(): string {
     return UnityHub.CONFIG_PATHS[this.platform as keyof typeof UnityHub.CONFIG_PATHS].projects || "";
@@ -89,7 +89,7 @@ class UnityHub {
   /**
    * Gets the path to the Unity Hub project directory configuration file
    * @returns {string} Path to project directory configuration file
-   * @private
+   * @internal
    */
   private static getProjectDirPath(): string {
     return UnityHub.CONFIG_PATHS[this.platform as keyof typeof UnityHub.CONFIG_PATHS].projectDir || "";
