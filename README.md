@@ -88,6 +88,107 @@ const result = await UnityHub.execUnityHubCommand(["editors", "-r"]);
 console.log(result.stdout);
 ```
 
+## UnityEditor API Reference
+
+UnityEditor provides an interface for automating tasks directly in the Unity Editor:
+
+### Installation and Availability
+```typescript
+import UnityEditor from "@notask/unity-cli-tools";
+
+// Get the executable path and verify installation
+const unityPath = UnityEditor.getUnityExecutablePath("2022.3.15f1");
+const isInstalled = await UnityEditor.isUnityVersionInstalled("2022.3.15f1");
+console.log(`Installed: ${isInstalled}`, unityPath);
+```
+
+### Executing Raw Editor Commands
+```typescript
+import { CommandResult } from "@notask/unity-cli-tools";
+
+const editorInfo = { version: "2022.3.15f1", path: unityPath };
+const result: CommandResult = await UnityEditor.execUnityEditorCommand(
+  editorInfo,
+  ["-batchmode", "-quit", "-projectPath", "/path/to/project"]
+);
+console.log(result.stdout);
+```
+
+### Creating and Opening Projects
+```typescript
+import { ProjectInfo } from "@notask/unity-cli-tools";
+
+const projectInfo: ProjectInfo = {
+  projectPath: "/path/to/new/project",
+  editorVersion: "2022.3.15f1"
+};
+
+await UnityEditor.createProject(projectInfo);
+await UnityEditor.openProject(projectInfo, true, true);
+```
+
+### Running Tests
+```typescript
+import { ProjectInfo, TestMode } from "@notask/unity-cli-tools";
+
+const projectInfo: ProjectInfo = {
+  projectPath: "/path/to/project",
+  editorVersion: "2022.3.15f1"
+};
+
+const { success, output } = await UnityEditor.runTests(projectInfo, TestMode.EditMode);
+console.log(success ? "Tests passed" : "Tests failed", output);
+```
+
+### License Management
+```typescript
+import { ProjectInfo } from "@notask/unity-cli-tools";
+
+const projectInfo: ProjectInfo = {
+  projectPath: "/path/to/project",
+  editorVersion: "2022.3.15f1"
+};
+
+await UnityEditor.activateLicense(projectInfo, "XXXX-XXXX-XXXX-XXXX-XXXX", "user@example.com", "password");
+await UnityEditor.returnLicense(projectInfo);
+```
+
+### Importing and Exporting Packages
+```typescript
+import { ProjectInfo } from "@notask/unity-cli-tools";
+
+const projectInfo: ProjectInfo = {
+  projectPath: "/path/to/project",
+  editorVersion: "2022.3.15f1"
+};
+
+await UnityEditor.exportPackage(
+  projectInfo,
+  ["Assets/UI", "Assets/Scripts"],
+  "/path/to/output/MyPackage.unitypackage"
+);
+await UnityEditor.importPackage(
+  projectInfo,
+  "/path/to/downloads/OtherPackage.unitypackage"
+);
+```
+
+### Executing Custom Editor Methods
+```typescript
+import { ProjectInfo } from "@notask/unity-cli-tools";
+
+const projectInfo: ProjectInfo = {
+  projectPath: "/path/to/project",
+  editorVersion: "2022.3.15f1"
+};
+
+const executionResult = await UnityEditor.executeMethod(
+  projectInfo,
+  "MyCompany.BuildTools.PerformBuild"
+);
+console.log(executionResult);
+```
+
 ## Available Constants
 
 ### UnityModules

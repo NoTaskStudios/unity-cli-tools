@@ -40,7 +40,7 @@ export enum UnityModules {
   UWPBuildSupportDotNet = "uwp-.net",
 }
 
-export enum UnityLanguages {
+export enum UnityEditorLanguages {
   Japanese = "language-ja",
   Korean = "language-ko",
   ChineseSimplified = "language-zh-hans",
@@ -53,21 +53,15 @@ export enum EditorArchitecture {
   arm64 = "arm64",
 }
 
-export type ModuleId = UnityModules | UnityLanguages;
+export type ModuleId = UnityModules | UnityEditorLanguages;
 export type UnityInstallations = Record<string, string>;
 
 //EDITOR
 export interface ProjectInfo {
-  path: string;
-  editorVersion: string;
   projectName: string;
+  projectPath: string;
+  editorVersion: string;
   scenes?: string[];
-}
-
-export interface ProjectSettings {
-  companyName?: string;
-  productName?: string;
-  bundleVersion?: string;
 }
 
 // Ref https://docs.unity3d.com/Packages/com.unity.test-framework@1.4/manual/reference-command-line.html#testplatform
@@ -93,22 +87,4 @@ export enum UnityBuildTarget {
   LinuxHeadlessSimulation = "LinuxHeadlessSimulation",
   PS5 = "PS5",
   VisionOS = "VisionOS",
-}
-
-/**
- * Represents a parsed Unity version
- */
-export interface ParsedVersion {
-  /** Major version number (e.g. 2022) */
-  major: number;
-  /** Minor version number (e.g. 3) */
-  minor: number;
-  /** Patch version number (e.g. 60) */
-  patch: number;
-  /** Release type: 'a' (alpha), 'b' (beta), 'f' (final) */
-  type: string;
-  /** Revision number (e.g. 1) */
-  revision: number;
-  /** Original version string */
-  original: string;
 }
