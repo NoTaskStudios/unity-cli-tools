@@ -1,6 +1,6 @@
 {
   "name": "@notask/unity-cli-tools",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/esm/index.d.ts",
@@ -44,7 +44,8 @@
   "description": "A tools for Unity command line development.",
   "dependencies": {
     "execa": "^9.5.2",
-    "fs-extra": "^11.3.0"
+    "fs-extra": "^11.3.0",
+    "unity-changeset": "2.5.0"
   },
   "devDependencies": {
     "@eslint/js": "9.24.0",

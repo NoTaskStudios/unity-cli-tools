@@ -11,6 +11,7 @@ import {
   UnityModules,
 } from "./types/unity.js";
 import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
+import { getUnityChangeset, UnityChangeset } from "unity-changeset";
 
 /**
  * Class for interacting with Unity Hub via command line interface
@@ -279,16 +280,15 @@ class UnityHub {
    */
   public static async addEditor(
     version: string,
-    changeset?: string,
     modules: ModuleId[] = [],
     architecture: EditorArchitecture = EditorArchitecture.x86_64
   ): Promise<void> {
     try {
-      console.debug(`Installing Unity ${version} ${(changeset ?? "") ? `(changeset: ${changeset})` : ""}`);
+      const data: UnityChangeset = await getUnityChangeset(version);
       const args = ["install", "-v", version];
 
-      if (changeset) {
-        args.push("--changeset", changeset);
+      if (data) {
+        args.push("--changeset", data.changeset);
       }
 
       if (modules.length > 0) {

@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.3...1.0.4) (2025-04-29)
+
+
+### Bug Fixes
+
+* **Hub:** get changeset for editor version installation ([ab4d9ad](https://github.com/NoTaskStudios/unity-cli-tools/commit/ab4d9adaeb3909bf44de5bdbbdde5e9c3ced297f))
+
 ## [1.0.3](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.2...1.0.3) (2025-04-28)
 
 
