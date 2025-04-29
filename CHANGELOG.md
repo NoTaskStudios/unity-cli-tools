@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.4...1.0.5) (2025-04-29)
+
+
+### Bug Fixes
+
+* **Editor:** Force hubIPC and usehub to add projects ([1da532a](https://github.com/NoTaskStudios/unity-cli-tools/commit/1da532a5db4cb9d1e7404861e570633b4661be99))
+
 ## [1.0.4](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.3...1.0.4) (2025-04-29)
 
 
