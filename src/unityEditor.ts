@@ -562,6 +562,7 @@ class UnityEditor {
    * @public
    * @static
    * @param {ProjectInfo} projectInfo - Information about the project to open
+   * @param {boolean} [useHub=true] - Whether to use Unity Hub for launching the project
    * @param {boolean} [batchmode=false] - Whether to run Unity in batch mode (headless, no UI)
    *                                     Use true for CI/CD pipelines or server environments
    * @param {boolean} [waitForExit=true] - Whether to wait for Unity to exit before resolving the promise
@@ -584,6 +585,7 @@ class UnityEditor {
    */
   public static async openProject(
     projectInfo: ProjectInfo,
+    useHub: boolean = true,
     batchmode: boolean = false,
     waitForExit: boolean = true
   ): Promise<boolean> {
@@ -598,6 +600,10 @@ class UnityEditor {
 
       if (batchmode) {
         args.push("-batchmode");
+      }
+
+      if (useHub) {
+        args.push(...["-useHub", "-hubIPC"]);
       }
 
       const editorInfo = { version: projectInfo.editorVersion };
