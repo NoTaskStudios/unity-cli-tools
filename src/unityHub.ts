@@ -92,11 +92,7 @@ class UnityHub {
    */
   public static async isUnityHubAvailable(): Promise<boolean> {
     try {
-      if (!this.hubPath || !fs.existsSync(this.hubPath)) {
-        return false;
-      } else {
-        return true;
-      }
+      return !this.hubPath || !fs.existsSync(this.hubPath);
     } catch (error) {
       console.error("Error checking Unity Hub availability:", error);
       return false;
