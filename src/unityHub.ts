@@ -90,7 +90,7 @@ class UnityHub {
    */
   public static async isUnityHubAvailable(): Promise<boolean> {
     try {
-      return !this.hubPath || !fs.existsSync(this.hubPath);
+      return !!this.hubPath && fs.existsSync(this.hubPath);
     } catch (error) {
       console.error("Error checking Unity Hub availability:", error);
       return false;
@@ -262,9 +262,7 @@ class UnityHub {
   public static async addEditor(
     version: string,
     modules: ModuleId[] = [],
-    architecture: EditorArchitecture = process.platform === "darwin"
-      ? EditorArchitecture.arm64
-      : EditorArchitecture.x86_64
+    architecture?: EditorArchitecture
   ): Promise<void> {
     try {
       const data = await getUnityChangeset(version);
@@ -275,6 +273,13 @@ class UnityHub {
       if (modules.length > 0) {
         args.push("--module");
         args.push(modules.join(" "));
+      }
+
+      if (!architecture) {
+        const arch = os.arch() || process.arch;
+        const defaultArchitecture =
+          arch === "arm64" || arch === "arm" ? EditorArchitecture.arm64 : EditorArchitecture.x86_64;
+        architecture = defaultArchitecture;
       }
 
       args.push("--architecture", architecture);

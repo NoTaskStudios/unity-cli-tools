@@ -168,7 +168,7 @@ class UnityEditor {
     method: string,
     args: string[] = [],
     options: CommandOptions = {}
-  ): Promise<any> {
+  ): Promise<CommandResult> {
     try {
       console.debug(`Executing method ${method} in Unity Editor`);
 
@@ -183,13 +183,28 @@ class UnityEditor {
 
       if (stderr) {
         console.error(`Error executing method: ${stderr}`);
-        return null;
+        return {
+          success: false,
+          stdout: "",
+          stderr: stderr,
+          exitCode: -1,
+        };
       }
 
-      return stdout;
+      return {
+        success: true,
+        stdout: stdout,
+        stderr: "",
+        exitCode: 0,
+      };
     } catch (error) {
       console.error("Error executing method:", error);
-      return null;
+      return {
+        success: false,
+        stdout: "",
+        stderr: String(error),
+        exitCode: -1,
+      };
     }
   }
 
@@ -320,7 +335,7 @@ class UnityEditor {
         (!stdout.includes("License activation failed") && !stderr.includes("License activation failed"));
 
       if (activationSuccessful) {
-        console.info(`Successfully activated license for Unity ${projectInfo.editorVersion}`);
+        console.debug(`Successfully activated license for Unity ${projectInfo.editorVersion}`);
         return true;
       } else {
         console.error(`Failed to activate license: ${stderr || stdout}`);
@@ -370,7 +385,7 @@ class UnityEditor {
         (!stdout.includes("Failed to return license") && !stderr.includes("Failed to return license"));
 
       if (returnSuccessful) {
-        console.info(`Successfully returned license for Unity ${projectInfo.editorVersion}`);
+        console.debug(`Successfully returned license for Unity ${projectInfo.editorVersion}`);
         return true;
       } else {
         console.error(`Failed to return license: ${stderr || stdout}`);
@@ -428,7 +443,7 @@ class UnityEditor {
         !stdout.includes("Failed to export package") && !stderr.includes("Failed to export package");
 
       if (exportSuccessful) {
-        console.info(`Successfully exported package to ${outputPath}`);
+        console.debug(`Successfully exported package to ${outputPath}`);
         return true;
       } else {
         console.error(`Failed to export package: ${stderr || stdout}`);
@@ -481,7 +496,7 @@ class UnityEditor {
         !stdout.includes("Failed to import package") && !stderr.includes("Failed to import package");
 
       if (importSuccessful) {
-        console.info(`Successfully imported package ${packagePath}`);
+        console.debug(`Successfully imported package ${packagePath}`);
         return true;
       } else {
         console.error(`Failed to import package: ${stderr || stdout}`);
@@ -543,7 +558,7 @@ class UnityEditor {
         !stdout.includes("Failed to create project") && !stderr.includes("Failed to create project");
 
       if (creationSuccessful) {
-        console.info(`Successfully created project at ${projectInfo.projectPath}`);
+        console.debug(`Successfully created project at ${projectInfo.projectPath}`);
         return true;
       } else {
         console.error(`Failed to create project: ${stderr || stdout}`);
@@ -616,12 +631,12 @@ class UnityEditor {
         !stdout.includes("Failed to open project") && !stderr.includes("Failed to open project");
 
       if (openingSuccessful) {
-        console.info(`Successfully opened project`);
-        return true;
+        console.debug(`Successfully opened project`);
       } else {
         console.error(`Failed to open project: ${stderr || stdout}`);
-        return false;
       }
+
+      return openingSuccessful;
     } catch (error) {
       console.error("Error opening project:", error);
       return false;
