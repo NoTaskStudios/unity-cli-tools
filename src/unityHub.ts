@@ -9,7 +9,7 @@ import {
   UnityInstallations,
 } from "./types/unity.js";
 import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
-import { getUnityChangeset, UnityChangeset } from "unity-changeset";
+import { getUnityChangeset } from "unity-changeset";
 
 /**
  * Class for interacting with Unity Hub via command line interface
@@ -262,7 +262,9 @@ class UnityHub {
   public static async addEditor(
     version: string,
     modules: ModuleId[] = [],
-    architecture: EditorArchitecture = EditorArchitecture.x86_64
+    architecture: EditorArchitecture = process.platform === "darwin"
+      ? EditorArchitecture.arm64
+      : EditorArchitecture.x86_64
   ): Promise<void> {
     try {
       const data = await getUnityChangeset(version);
@@ -275,9 +277,7 @@ class UnityHub {
         args.push(modules.join(" "));
       }
 
-      if (this.platform === "darwin") {
-        args.push("--architecture", architecture);
-      }
+      args.push("--architecture", architecture);
 
       const { stdout, stderr } = await this.execUnityHubCommand(args, {
         reject: false,
