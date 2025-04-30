@@ -41,18 +41,6 @@ class UnityHub {
   };
 
   /**
-   * Available Unity module identifiers
-   * @public
-   */
-  public static readonly Modules = UnityModules;
-
-  /**
-   * Available Unity language packs
-   * @public
-   */
-  public static readonly Languages = UnityEditorLanguages;
-
-  /**
    * Current platform (win32, darwin, linux)
    * @internal
    */
