@@ -7,8 +7,6 @@ import {
   UnityHubProject,
   UnityHubProjectsList,
   UnityInstallations,
-  UnityEditorLanguages,
-  UnityModules,
 } from "./types/unity.js";
 import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
 import { getUnityChangeset, UnityChangeset } from "unity-changeset";
@@ -219,7 +217,7 @@ class UnityHub {
   public static async addModule(
     editorVersion: string,
     modules: ModuleId[],
-    childModules: boolean = false
+    childModules: boolean = true
   ): Promise<void> {
     try {
       console.debug(`Adding module ${modules} to Unity ${editorVersion}`);
@@ -227,14 +225,13 @@ class UnityHub {
       const args = ["install-modules", "-v", editorVersion];
 
       if (modules.length > 0) {
-        args.push("--module");
-        args.push(modules.join(" "));
+        args.push(...["--module", modules.join(" ")]);
+
+        if (childModules) {
+          args.push("--child-modules");
+        }
       } else {
         throw new Error("No module IDs provided.");
-      }
-
-      if (childModules) {
-        args.push("--child-modules");
       }
 
       const { stdout, stderr } = await this.execUnityHubCommand(args, {
@@ -268,12 +265,10 @@ class UnityHub {
     architecture: EditorArchitecture = EditorArchitecture.x86_64
   ): Promise<void> {
     try {
-      const data: UnityChangeset = await getUnityChangeset(version);
+      const data = await getUnityChangeset(version);
       const args = ["install", "-v", version];
 
-      if (data) {
-        args.push("--changeset", data.changeset);
-      }
+      args.push("--changeset", data.changeset);
 
       if (modules.length > 0) {
         args.push("--module");
