@@ -296,7 +296,7 @@ class UnityHub {
         throw new Error(`Error installing Unity ${version}: ${stderr}`);
       }
 
-      console.log(`Unity ${version}. ${stdout}`);
+      console.debug(`Unity ${version}. ${stdout}`);
     } catch (error) {
       console.error(error);
       throw error;
