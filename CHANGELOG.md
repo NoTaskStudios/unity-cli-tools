@@ -1,3 +1,18 @@
+## [1.0.6-rc.2](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.6-rc.1...1.0.6-rc.2) (2025-04-30)
+
+
+### Bug Fixes
+
+* **Hub:** auto detect system arch when arg no passed ([1e6ff27](https://github.com/NoTaskStudios/unity-cli-tools/commit/1e6ff27ca37a70014823693489447d8cd2ada9b9))
+
+## [1.0.6-rc.1](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.5...1.0.6-rc.1) (2025-04-30)
+
+
+### Bug Fixes
+
+* **Hub:** adjust in default params values ([ca12050](https://github.com/NoTaskStudios/unity-cli-tools/commit/ca120505433e4c6c01c54e1917de564a4883416b))
+* **Hub:** Remove some class members ([78c37e2](https://github.com/NoTaskStudios/unity-cli-tools/commit/78c37e2b83197e6d8445bbdeeb23ff4c457eedd0))
+
 ## [1.0.5](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.4...1.0.5) (2025-04-29)
 
 

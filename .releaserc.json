@@ -1,12 +1,12 @@
 {
   "tagFormat": "${version}",
   "preset": "angular",
+  "repositoryUrl": "https://github.com/NoTaskStudios/unity-cli-tools.git",
   "branches": [
     "master",
     {
       "name": "release/v*",
-      "type": "prerelease",
-      "prerelease": true,
+      "prerelease": "rc",
       "channel": "rc"
     }
   ],

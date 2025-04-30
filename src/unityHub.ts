@@ -7,11 +7,9 @@ import {
   UnityHubProject,
   UnityHubProjectsList,
   UnityInstallations,
-  UnityEditorLanguages,
-  UnityModules,
 } from "./types/unity.js";
 import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
-import { getUnityChangeset, UnityChangeset } from "unity-changeset";
+import { getUnityChangeset } from "unity-changeset";
 
 /**
  * Class for interacting with Unity Hub via command line interface
@@ -39,18 +37,6 @@ class UnityHub {
       projectDir: path.join(os.homedir(), ".config", "UnityHub", "projectDir.json"),
     },
   };
-
-  /**
-   * Available Unity module identifiers
-   * @public
-   */
-  public static readonly Modules = UnityModules;
-
-  /**
-   * Available Unity language packs
-   * @public
-   */
-  public static readonly Languages = UnityEditorLanguages;
 
   /**
    * Current platform (win32, darwin, linux)
@@ -104,11 +90,7 @@ class UnityHub {
    */
   public static async isUnityHubAvailable(): Promise<boolean> {
     try {
-      if (!this.hubPath || !fs.existsSync(this.hubPath)) {
-        return false;
-      } else {
-        return true;
-      }
+      return !!this.hubPath && fs.existsSync(this.hubPath);
     } catch (error) {
       console.error("Error checking Unity Hub availability:", error);
       return false;
@@ -235,7 +217,7 @@ class UnityHub {
   public static async addModule(
     editorVersion: string,
     modules: ModuleId[],
-    childModules: boolean = false
+    childModules: boolean = true
   ): Promise<void> {
     try {
       console.debug(`Adding module ${modules} to Unity ${editorVersion}`);
@@ -243,14 +225,13 @@ class UnityHub {
       const args = ["install-modules", "-v", editorVersion];
 
       if (modules.length > 0) {
-        args.push("--module");
-        args.push(modules.join(" "));
+        args.push(...["--module", modules.join(" ")]);
+
+        if (childModules) {
+          args.push("--child-modules");
+        }
       } else {
         throw new Error("No module IDs provided.");
-      }
-
-      if (childModules) {
-        args.push("--child-modules");
       }
 
       const { stdout, stderr } = await this.execUnityHubCommand(args, {
@@ -281,24 +262,27 @@ class UnityHub {
   public static async addEditor(
     version: string,
     modules: ModuleId[] = [],
-    architecture: EditorArchitecture = EditorArchitecture.x86_64
+    architecture?: EditorArchitecture
   ): Promise<void> {
     try {
-      const data: UnityChangeset = await getUnityChangeset(version);
+      const data = await getUnityChangeset(version);
       const args = ["install", "-v", version];
 
-      if (data) {
-        args.push("--changeset", data.changeset);
-      }
+      args.push("--changeset", data.changeset);
 
       if (modules.length > 0) {
         args.push("--module");
         args.push(modules.join(" "));
       }
 
-      if (this.platform === "darwin") {
-        args.push("--architecture", architecture);
+      if (!architecture) {
+        const arch = os.arch() || process.arch;
+        const defaultArchitecture =
+          arch === "arm64" || arch === "arm" ? EditorArchitecture.arm64 : EditorArchitecture.x86_64;
+        architecture = defaultArchitecture;
       }
+
+      args.push("--architecture", architecture);
 
       const { stdout, stderr } = await this.execUnityHubCommand(args, {
         reject: false,
@@ -308,7 +292,7 @@ class UnityHub {
         throw new Error(`Error installing Unity ${version}: ${stderr}`);
       }
 
-      console.log(`Unity ${version}. ${stdout}`);
+      console.debug(`Unity ${version}. ${stdout}`);
     } catch (error) {
       console.error(error);
       throw error;
