@@ -1,3 +1,13 @@
+## [1.0.7-rc.1](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.6...1.0.7-rc.1) (2025-05-03)
+
+
+### Bug Fixes
+
+* **Editor:** hotfix import error from UnityEditor security ([f7cf9b8](https://github.com/NoTaskStudios/unity-cli-tools/commit/f7cf9b886e63df9e7ad2c10ac3351f42a73b9c81))
+* extended CommandOptions with std events ([8198f9f](https://github.com/NoTaskStudios/unity-cli-tools/commit/8198f9f5fec330a389405194412310d22b3ab785))
+* **Hub:** simple stream output feedback ([ba21b46](https://github.com/NoTaskStudios/unity-cli-tools/commit/ba21b462f3eee168909ae54003936e4c551bcaed)), closes [#13](https://github.com/NoTaskStudios/unity-cli-tools/issues/13)
+* subprocess send streams stdout and stderr ([4348611](https://github.com/NoTaskStudios/unity-cli-tools/commit/4348611f96da5fbbed39895ac587a5e6caad1d03))
+
 ## [1.0.6](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.5...1.0.6) (2025-04-30)
 
 
