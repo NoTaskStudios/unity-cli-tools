@@ -3,7 +3,7 @@ import fs from "fs-extra";
 import path from "path";
 import { ProjectInfo, TestMode, UnityBuildTarget, UnityEditorInfo } from "./types/unity.js";
 import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
-import { redactSensitiveArgs } from "utils/security.js";
+import { redactSensitiveArgs } from "./utils/security.js";
 
 /**
  * UnityEditor class provides a comprehensive interface for interacting with the Unity game engine editor
