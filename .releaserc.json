@@ -3,7 +3,12 @@
   "preset": "angular",
   "repositoryUrl": "https://github.com/NoTaskStudios/unity-cli-tools.git",
   "branches": [
-    "master"
+    "master",
+    {
+      "name": "release/v*",
+      "prerelease": "rc",
+      "channel": "rc"
+    }
   ],
   "plugins": [
     "@semantic-release/commit-analyzer",
