@@ -234,11 +234,15 @@ class UnityHub {
         throw new Error("No module IDs provided.");
       }
 
-      const { stdout, stderr } = await this.execUnityHubCommand(args, {
+      const { stderr } = await this.execUnityHubCommand(args, {
         reject: false,
+        onStderr: (data: string) => {
+          console.warn(`Unity Hub stderr: ${data}`);
+        },
+        onStdout: (data: string) => {
+          console.debug(`Unity Hub stdout: ${data}`);
+        },
       });
-
-      console.debug(`Add module command output: ${stdout}`);
 
       if (stderr) {
         console.warn(`Add module command warning/error: ${stderr}`);
@@ -286,6 +290,12 @@ class UnityHub {
 
       const { stdout, stderr } = await this.execUnityHubCommand(args, {
         reject: false,
+        onStderr: (data: string) => {
+          console.warn(`Unity Hub stderr: ${data}`);
+        },
+        onStdout: (data: string) => {
+          console.debug(`Unity Hub stdout: ${data}`);
+        },
       });
 
       if (stderr) {
