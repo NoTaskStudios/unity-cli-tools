@@ -22,26 +22,44 @@ export async function executeCommand(
   options: CommandOptions = {}
 ): Promise<CommandResult> {
   try {
+    const streamOutput = options.onStdout || options.onStderr;
+
     const subprocess = execa(executable, args, {
       reject: options.reject ?? false,
       timeout: options.timeout,
       env: options.env,
       cwd: options.cwd,
       encoding: "utf8",
+      buffer: !streamOutput,
     });
 
-    /*
-    // Pipe the output to the parent process
-    // This is commented out to avoid cluttering the output
-    // Uncomment if you want to see the output in real-time
-    if (subprocess.stdout) {
-      subprocess.stdout.pipe(process.stdout);
-    }
+    if (streamOutput) {
+      if (subprocess.stdout) {
+        subprocess.stdout.on("data", (data: Buffer) => {
+          const lines = data.toString().split(/\r?\n/);
+          for (const line of lines) {
+            if (line.trim()) {
+              if (options.onStdout) {
+                options.onStdout(line);
+              }
+            }
+          }
+        });
+      }
 
-    if (subprocess.stderr) {
-      subprocess.stderr.pipe(process.stderr);
+      if (subprocess.stderr) {
+        subprocess.stderr.on("data", (data: Buffer) => {
+          const lines = data.toString().split(/\r?\n/);
+          for (const line of lines) {
+            if (line.trim()) {
+              if (options.onStderr) {
+                options.onStderr(line);
+              }
+            }
+          }
+        });
+      }
     }
-    */
 
     const { stdout, stderr, exitCode } = await subprocess;
 
