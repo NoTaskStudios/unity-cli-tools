@@ -3,6 +3,8 @@ import { Options, execa } from "execa";
 export interface CommandOptions extends Options {
   reject?: boolean;
   timeout?: number;
+  onStdout?: (data: string) => void;
+  onStderr?: (data: string) => void;
   env?: Record<string, string>;
   cwd?: string;
 }
