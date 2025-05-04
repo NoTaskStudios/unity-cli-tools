@@ -220,3 +220,41 @@ export enum UnityBuildTarget {
   /** VisionOS build target */
   VisionOS = "VisionOS",
 }
+
+/**
+ * Enum for Unity installation statuses
+ * These values correspond to the different states of a Unity installation process
+ */
+export enum InstallerStatus {
+  Queued = "queued for download",
+  Validating = "validating download",
+  InProgress = "in progress",
+  Downloading = "downloading",
+  QueuedInstall = "queued for install",
+  ValidatingInstall = "validation installation",
+  Installing = "installing",
+  Verifying = "verifying",
+  Installed = "installed successfully",
+  Error = "Error",
+}
+
+/**
+ * Interface representing an installer event
+ * Contains information about the status of a module installation process
+ */
+export interface InstallerEvent {
+  module: string;
+  status: InstallerStatus;
+  progress?: number;
+}
+
+/**
+ * Enum for installer event types
+ * These values correspond to the different types of events that can occur during the installation process
+ */
+export enum InstallerEventType {
+  Progress = "progress",
+  Error = "error",
+  Complete = "complete",
+  Cancelled = "cancelled",
+}
