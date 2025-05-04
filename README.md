@@ -69,6 +69,34 @@ await UnityHub.addEditor("2022.3.60f1", undefined, [UnityModules.AndroidBuildSup
 await UnityHub.addModule("2022.3.60f1", [UnityModules.IOSBuildSupport]);
 ```
 
+### Installation Events
+
+```typescript
+import { UnityHub, UnityModules, InstallerEventType } from "unity-cli-tools";
+
+// Install with event tracking (addEditor returns an event emitter)
+const installer = await UnityHub.addEditor("2022.3.60f1");
+
+// Get a promise that resolves when installation completes
+const installation = installer.completed;
+
+// Or listen to specific events
+installer.on(InstallerEventType.Progress, (events) => {
+  console.log("Progress:", events.map(e => `${e.module}: ${e.status} ${e.progress || 0}%`));
+});
+
+installer.on(InstallerEventType.Error, (error) => {
+  console.error("Installation error:", error);
+});
+
+installer.on(InstallerEventType.Completed, (events) => {
+  console.log("Installation completed!");
+});
+
+// Cancel installation if needed
+installer.Cancel();
+```
+
 ### Projects Management
 
 ```typescript
@@ -224,6 +252,30 @@ console.log(executionResult);
 | `ChineseSimplified`  | Simplified Chinese language pack  |
 | `ChineseTraditional` | Traditional Chinese language pack |
 | `Chinese`            | Chinese language pack (legacy)    |
+
+### InstallerStatus
+
+| Constant           | Description                     |
+| ------------------ | ------------------------------- |
+| `Queued`           | Queued for download            |
+| `Validating`       | Validating download            |
+| `InProgress`       | Installation in progress       |
+| `Downloading`      | Downloading installation files |
+| `QueuedInstall`    | Queued for install            |
+| `ValidatingInstall`| Validating installation        |
+| `Installing`       | Installing                     |
+| `Verifying`        | Verifying installation         |
+| `Installed`        | Installed successfully         |
+| `Error`            | Installation error             |
+
+### InstallerEventType
+
+| Constant     | Description                                 |
+| ------------ | ------------------------------------------- |
+| `Progress`   | Installation progress update event          |
+| `Error`      | Installation error event                    |
+| `Completed`  | Installation completed successfully event   |
+| `Cancelled`  | Installation cancelled by user event        |
 
 
 ## Configuration
