@@ -1,3 +1,18 @@
+# [1.1.0-rc.1](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.7...1.1.0-rc.1) (2025-05-04)
+
+
+### Bug Fixes
+
+* access modifiers and catch execa errors ([78c7d26](https://github.com/NoTaskStudios/unity-cli-tools/commit/78c7d26e863fecfe6518384335f9f403cf4144e7))
+
+
+### Features
+
+* **Hub:** Added Error track event for installers ([7333430](https://github.com/NoTaskStudios/unity-cli-tools/commit/7333430a87b2a306e0d9915f2d5bb60baf538698))
+* **Hub:** Added install event emitter for hub events ([cb26730](https://github.com/NoTaskStudios/unity-cli-tools/commit/cb26730c94840218dbc6300573dd601003632a33))
+* **Hub:** Added installer std parser to event emitter ([ffe57b4](https://github.com/NoTaskStudios/unity-cli-tools/commit/ffe57b4b09a1d921573351526df5e887b23875cf))
+* **Hub:** Added types for installer event emitter ([f25e486](https://github.com/NoTaskStudios/unity-cli-tools/commit/f25e48611e0d7b8b49aafea4f0900f65e42cc079))
+
 ## [1.0.7](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.6...1.0.7) (2025-05-03)
 
 
