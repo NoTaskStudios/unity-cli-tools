@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.1.1...1.1.2) (2025-05-04)
+
+
+### Bug Fixes
+
+* **hot-fix:** completed promise as get ([22f152a](https://github.com/NoTaskStudios/unity-cli-tools/commit/22f152a5da016371719649593a96005a636fa9c5))
+
 ## [1.1.1](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.1.0...1.1.1) (2025-05-04)
 
 
