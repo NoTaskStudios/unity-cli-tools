@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.1.0...1.1.1) (2025-05-04)
+
+
+### Bug Fixes
+
+* **hot-fix:** re-import event modules ([36d1c00](https://github.com/NoTaskStudios/unity-cli-tools/commit/36d1c0011b663c88e321199ab953edc412b10ada))
+
 # [1.1.0](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.0.7...1.1.0) (2025-05-04)
 
 
