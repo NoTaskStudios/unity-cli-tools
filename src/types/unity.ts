@@ -245,7 +245,8 @@ export enum InstallerStatus {
 export interface InstallerEvent {
   module: string;
   status: InstallerStatus;
-  progress?: number;
+  progress?: number | null;
+  error?: string | null;
 }
 
 /**
@@ -255,6 +256,6 @@ export interface InstallerEvent {
 export enum InstallerEventType {
   Progress = "progress",
   Error = "error",
-  Complete = "complete",
+  Completed = "completed",
   Cancelled = "cancelled",
 }
