@@ -10,6 +10,7 @@ import {
 } from "./types/unity.js";
 import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
 import { getUnityChangeset } from "unity-changeset";
+import { UnityHubInstallerEvent } from "./events/hubEventEmitter.ts";
 
 /**
  * Class for interacting with Unity Hub via command line interface
@@ -210,7 +211,7 @@ class UnityHub {
    * @param {string} editorVersion - Unity version to add modules to (e.g. "2022.3.60f1")
    * @param {ModuleId[]} modules - Array of module IDs to add
    * @param {boolean} [childModules=false] - Whether to include child modules
-   * @returns {Promise<void>} Resolves when modules are added successfully
+   * @returns {UnityHubInstallerEvent} Event emitter for installation progress
    * @throws Will throw an error if module addition fails
    * @public
    */
@@ -218,7 +219,7 @@ class UnityHub {
     editorVersion: string,
     modules: ModuleId[],
     childModules: boolean = true
-  ): Promise<void> {
+  ): Promise<UnityHubInstallerEvent> {
     try {
       console.debug(`Adding module ${modules} to Unity ${editorVersion}`);
 
@@ -234,19 +235,15 @@ class UnityHub {
         throw new Error("No module IDs provided.");
       }
 
-      const { stderr } = await this.execUnityHubCommand(args, {
+      const installerEmitter = new UnityHubInstallerEvent();
+      this.execUnityHubCommand(args, {
         reject: false,
-        onStderr: (data: string) => {
-          console.warn(`Unity Hub stderr: ${data}`);
-        },
-        onStdout: (data: string) => {
-          console.debug(`Unity Hub stdout: ${data}`);
-        },
+        //onStderr: (data: string) => installerEmitter.Progress(data),
+        onStdout: (data: string) => installerEmitter.Progress(data),
+      }).catch((error) => {
+        console.error(`Error adding module ${modules} to Unity ${editorVersion}:`, error);
       });
-
-      if (stderr) {
-        console.warn(`Add module command warning/error: ${stderr}`);
-      }
+      return installerEmitter;
     } catch (error) {
       console.error(`Error adding module ${modules} to Unity ${editorVersion}:`, error);
       throw error;
@@ -259,7 +256,7 @@ class UnityHub {
    * @param {string} [changeset] - Optional specific changeset to install
    * @param {ModuleId[]} [modules=[]] - Optional array of modules to install with the editor
    * @param {EditorArchitecture} [architecture=EditorArchitecture.x86_64] - Optional architecture (x86_64 or arm64)
-   * @returns {Promise<void>} Resolves when editor installation begins successfully
+   * @returns {UnityHubInstallerEvent} Event emitter for installation progress
    * @throws Will throw an error if installation fails to start
    * @public
    */
@@ -267,7 +264,7 @@ class UnityHub {
     version: string,
     modules: ModuleId[] = [],
     architecture?: EditorArchitecture
-  ): Promise<void> {
+  ): Promise<UnityHubInstallerEvent> {
     try {
       const data = await getUnityChangeset(version);
       const args = ["install", "-v", version];
@@ -288,21 +285,16 @@ class UnityHub {
 
       args.push("--architecture", architecture);
 
-      const { stdout, stderr } = await this.execUnityHubCommand(args, {
+      const installerEmitter = new UnityHubInstallerEvent();
+      this.execUnityHubCommand(args, {
         reject: false,
-        onStderr: (data: string) => {
-          console.warn(`Unity Hub stderr: ${data}`);
-        },
-        onStdout: (data: string) => {
-          console.debug(`Unity Hub stdout: ${data}`);
-        },
+        //onStderr: (data: string) => installerEmitter.Error(data),
+        onStdout: (data: string) => installerEmitter.Progress(data),
+      }).catch((error) => {
+        console.error(`Error installing Unity ${version}:`, error);
       });
 
-      if (stderr) {
-        throw new Error(`Error installing Unity ${version}: ${stderr}`);
-      }
-
-      console.debug(`Unity ${version}. ${stdout}`);
+      return installerEmitter;
     } catch (error) {
       console.error(error);
       throw error;
