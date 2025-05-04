@@ -18,11 +18,11 @@ export interface InstallerEmitter extends EventEmitter {
 export class UnityHubInstallerEvent extends EventEmitter implements InstallerEmitter {
   #moduleTracker: Map<string, InstallerStatus> = new Map();
 
-  constructor() {
+  public constructor() {
     super();
   }
 
-  completed: Promise<InstallerEvent[]> = new Promise((resolve, reject) => {
+  public completed: Promise<InstallerEvent[]> = new Promise((resolve, reject) => {
     this.on(InstallerEventType.Completed, (events) => resolve(events));
     this.on(InstallerEventType.Error, (error) => reject(error));
     this.on(InstallerEventType.Cancelled, (events) => reject(new Error("Cancelled")));
@@ -33,7 +33,7 @@ export class UnityHubInstallerEvent extends EventEmitter implements InstallerEmi
    * @param raw - The raw event string from Unity Hub.
    * @returns {void}
    */
-  Progress(raw: string): void {
+  public Progress(raw: string): void {
     const events = UnityHubEventParser.parseUnityHubEvent(raw);
     if (events.length === 0) return;
 
@@ -47,14 +47,14 @@ export class UnityHubInstallerEvent extends EventEmitter implements InstallerEmi
     this.#Complete(progressEvents);
   }
 
-  #Error(events: InstallerEvent[]) {
+  #Error(events: InstallerEvent[]): void {
     const errorEvents = events.filter((e) => e.status === InstallerStatus.Error);
 
     if (errorEvents.length === 0) return;
     this.emit(InstallerEventType.Error, errorEvents);
   }
 
-  #Complete(events: InstallerEvent[]) {
+  #Complete(events: InstallerEvent[]): void {
     const installed = events.filter((e) => e.status === InstallerStatus.Installed);
     if (installed.length > 0 && installed.length === events.length) {
       this.emit(InstallerEventType.Completed, installed);
@@ -65,17 +65,17 @@ export class UnityHubInstallerEvent extends EventEmitter implements InstallerEmi
    * Emits a cancelled event.
    * @returns {void}
    */
-  Cancel(): void {
+  public Cancel(): void {
     //Cancel operation
     this.#moduleTracker.clear();
     this.#Cancelled([]);
   }
 
-  #Cancelled(event: InstallerEvent[]) {
+  #Cancelled(event: InstallerEvent[]): void {
     this.emit(InstallerEventType.Cancelled, event);
   }
 
-  #updateModuleTracker(events: InstallerEvent[]) {
+  #updateModuleTracker(events: InstallerEvent[]): void {
     for (const event of events) {
       this.#moduleTracker.set(event.module, event.status);
     }

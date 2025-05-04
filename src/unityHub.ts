@@ -240,6 +240,8 @@ class UnityHub {
         reject: false,
         //onStderr: (data: string) => installerEmitter.Progress(data),
         onStdout: (data: string) => installerEmitter.Progress(data),
+      }).catch((error) => {
+        console.error(`Error adding module ${modules} to Unity ${editorVersion}:`, error);
       });
       return installerEmitter;
     } catch (error) {
@@ -288,6 +290,8 @@ class UnityHub {
         reject: false,
         //onStderr: (data: string) => installerEmitter.Error(data),
         onStdout: (data: string) => installerEmitter.Progress(data),
+      }).catch((error) => {
+        console.error(`Error installing Unity ${version}:`, error);
       });
 
       return installerEmitter;

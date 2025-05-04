@@ -19,7 +19,7 @@ export class UnityHubEventParser {
 
     for (const line of lines) {
       const match = line.match(pattern);
-      if (match && match.groups) {
+      if (match?.groups) {
         const { module, status, progress } = match.groups;
         events.push({
           module: module.trim(),
