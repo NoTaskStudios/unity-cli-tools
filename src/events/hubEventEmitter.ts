@@ -22,11 +22,32 @@ export class UnityHubInstallerEvent extends EventEmitter implements InstallerEmi
     super();
   }
 
-  public completed: Promise<InstallerEvent[]> = new Promise((resolve, reject) => {
-    this.on(InstallerEventType.Completed, (events) => resolve(events));
-    this.on(InstallerEventType.Error, (error) => reject(error));
-    this.on(InstallerEventType.Cancelled, (events) => reject(new Error("Cancelled")));
-  });
+  public get completed(): Promise<InstallerEvent[]> {
+    return new Promise((resolve, reject) => {
+      const onComplete = (events: InstallerEvent[]) => {
+        cleanup();
+        resolve(events);
+      };
+      const onError = (error: any) => {
+        cleanup();
+        reject(error);
+      };
+      const onCancel = () => {
+        cleanup();
+        reject(new Error("Cancelled"));
+      };
+
+      const cleanup = () => {
+        this.off(InstallerEventType.Completed, onComplete);
+        this.off(InstallerEventType.Error, onError);
+        this.off(InstallerEventType.Cancelled, onCancel);
+      };
+
+      this.on(InstallerEventType.Completed, onComplete);
+      this.on(InstallerEventType.Error, onError);
+      this.on(InstallerEventType.Cancelled, onCancel);
+    });
+  }
 
   /**
    * Parses the raw event string and emits the appropriate event.
