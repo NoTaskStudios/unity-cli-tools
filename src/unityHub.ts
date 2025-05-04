@@ -215,11 +215,11 @@ class UnityHub {
    * @throws Will throw an error if module addition fails
    * @public
    */
-  public static addModule(
+  public static async addModule(
     editorVersion: string,
     modules: ModuleId[],
     childModules: boolean = true
-  ): UnityHubInstallerEvent {
+  ): Promise<UnityHubInstallerEvent> {
     try {
       console.debug(`Adding module ${modules} to Unity ${editorVersion}`);
 
