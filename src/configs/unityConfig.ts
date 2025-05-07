@@ -6,7 +6,7 @@ import path from "path";
  */
 interface UnityHubPaths {
   /** Path to the Unity Hub executable */
-  hub: string;
+  hubDir: string;
 
   /** Path to the Unity Hub projects list file */
   projects: string;
@@ -46,3 +46,83 @@ interface PlatformConfig {
   architecture: string;
 }
 
+/**
+ * Platform-specific paths for Unity Hub components
+ */
+const UNITY_HUB_PATHS: Record<string, UnityHubPaths> = {
+  win32: {
+    hubDir: "C:\\Program Files\\Unity Hub\\Unity Hub.exe",
+    projects: path.join(os.homedir(), "AppData", "Roaming", "UnityHub", "projects-v1.json"),
+    projectDir: path.join(os.homedir(), "AppData", "Roaming", "UnityHub", "projectDir.json"),
+  },
+  darwin: {
+    hubDir: "/Applications/Unity Hub.app/Contents/MacOS/Unity Hub",
+    projects: path.join(os.homedir(), "Library", "Application Support", "UnityHub", "projects-v1.json"),
+    projectDir: path.join(os.homedir(), "Library", "Application Support", "UnityHub", "projectDir.json"),
+  },
+  linux: {
+    hubDir: "/opt/UnityHub/UnityHub",
+    projects: path.join(os.homedir(), ".config", "UnityHub", "projects-v1.json"),
+    projectDir: path.join(os.homedir(), ".config", "UnityHub", "projectDir.json"),
+  },
+};
+
+/**
+ * Configuration paths for Unity Editor executables across different operating systems.
+ */
+const UNITY_EDITOR_PATHS: Record<string, UnityEditorPaths> = {
+  win32: {
+    base: "C:/Program Files/Unity/Hub/Editor",
+    executable: "Editor/Unity.exe",
+    projectTemplates: "Editor/Data/Resources/PackageManager/ProjectTemplates",
+  },
+  darwin: {
+    base: "/Applications/Unity/Hub/Editor",
+    executable: "Unity.app/Contents/MacOS/Unity",
+    projectTemplates: "Unity.app/Contents/Resources/PackageManager/ProjectTemplates",
+  },
+  linux: {
+    base: "/opt/unity/editor",
+    executable: "Editor/Unity",
+    projectTemplates: "Editor/Data/Resources/PackageManager/ProjectTemplates",
+  },
+};
+
+class UnityConfig {
+  /**
+   * Gets the current platform configuration
+   * @returns The platform-specific Unity paths configuration
+   */
+  public static getPlatformConfig(): PlatformConfig {
+    const platform = process.platform;
+    const unityHubPaths = UNITY_HUB_PATHS[platform];
+    const unityEditorPaths = UNITY_EDITOR_PATHS[platform];
+
+    const settings: PlatformConfig = {
+      editor: {
+        base: environment.unityEditorPath ?? unityEditorPaths.base,
+        executable: unityEditorPaths.executable,
+        projectTemplates: unityEditorPaths.projectTemplates,
+      },
+      hub: {
+        hubDir: environment.unityHubPath ?? unityHubPaths.hubDir,
+        projects: unityHubPaths.projects,
+        projectDir: unityHubPaths.projectDir,
+      },
+      platform,
+      architecture: os.arch(),
+    };
+
+    return settings;
+  }
+}
+
+const environment = {
+  unityHubPath: process.env.UNITY_HUB_PATH,
+  unityEditorPath: process.env.UNITY_EDITOR_PATH,
+  unityProjectPath: process.env.UNITY_PROJECT_PATH,
+  unityProjectTemplatePath: process.env.UNITY_PROJECT_TEMPLATE_PATH,
+};
+
+export { UnityConfig };
+export type { UnityHubPaths, UnityEditorPaths, PlatformConfig };
