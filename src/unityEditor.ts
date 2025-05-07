@@ -28,14 +28,17 @@ class UnityEditor {
     win32: {
       base: "C:/Program Files/Unity/Hub/Editor",
       executable: "Editor/Unity.exe",
+      templates: "Editor/Data/Resources/PackageManager/ProjectTemplates",
     },
     darwin: {
       base: "/Applications/Unity/Hub/Editor",
       executable: "Unity.app/Contents/MacOS/Unity",
+      templates: "Editor/Data/Resources/PackageManager/ProjectTemplates",
     },
     linux: {
       base: "/opt/unity/editor",
       executable: "Editor/Unity",
+      templates: "",
     },
   };
 
@@ -58,6 +61,25 @@ class UnityEditor {
     const unityConfig = UnityEditor.UNITY_PATHS[platform];
 
     const unityPath = path.join(unityConfig.base, version, unityConfig.executable);
+    return unityPath;
+  }
+
+  /**
+   * Resolves the platform-specific path to the Unity templates directory for a given version.
+   * This function detects the current operating system and combines the appropriate
+   * base path with the version-specific subdirectory and templates location.
+   *
+   * @public
+   * @static
+   * @param {string} version - Unity editor version in the format "YYYY.N.XfN" (e.g., "2023.3.0f1")
+   * @returns {string} Absolute path to the Unity templates directory for the specified version
+   * @throws {Error} If the current platform is not supported (not win32, darwin, or linux)
+   */
+  public static getUnityTemplatesPath(version: string): string {
+    const platform = os.platform() as keyof typeof UnityEditor.UNITY_PATHS;
+    const unityConfig = UnityEditor.UNITY_PATHS[platform];
+
+    const unityPath = path.join(unityConfig.base, version, unityConfig.templates);
     return unityPath;
   }
 
@@ -545,9 +567,7 @@ class UnityEditor {
 
       const args = ["-createProject", projectInfo.projectPath];
 
-      if (waitForExit) {
-        args.push("-quit");
-      }
+      if (waitForExit) args.push("-quit");
 
       const editorInfo = { version: projectInfo.editorVersion };
       const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, {
@@ -610,17 +630,9 @@ class UnityEditor {
 
       const args = ["-projectPath", projectInfo.projectPath];
 
-      if (waitForExit) {
-        args.push("-quit");
-      }
-
-      if (batchmode) {
-        args.push("-batchmode");
-      }
-
-      if (useHub) {
-        args.push(...["-useHub", "-hubIPC"]);
-      }
+      if (waitForExit) args.push("-quit");
+      if (batchmode) args.push("-batchmode");
+      if (useHub) args.push(...["-useHub", "-hubIPC"]);
 
       const editorInfo = { version: projectInfo.editorVersion };
       const options = { reject: false };
