@@ -1,9 +1,9 @@
-import os from "os";
 import fs from "fs-extra";
 import path from "path";
 import { ProjectInfo, TestMode, UnityBuildTarget, UnityEditorInfo } from "./types/unity.js";
 import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
 import { redactSensitiveArgs } from "./utils/security.js";
+import { UnityConfig, UnityEditorPaths } from "./configs/unityConfig.ts";
 
 /**
  * UnityEditor class provides a comprehensive interface for interacting with the Unity game engine editor
@@ -14,33 +14,10 @@ import { redactSensitiveArgs } from "./utils/security.js";
  */
 class UnityEditor {
   /**
-   * Configuration paths for Unity Editor executables across different operating systems.
-   * The structure provides base installation directories and relative paths to the
-   * executable for each supported platform (Windows, macOS, Linux).
-   *
-   * @private
-   * @static
-   * @type {Object<string, {base: string, executable: string}>}
-   *
+   * Platform-specific configuration for Unity Hub
    * @internal
    */
-  private static UNITY_PATHS = {
-    win32: {
-      base: "C:/Program Files/Unity/Hub/Editor",
-      executable: "Editor/Unity.exe",
-      templates: "Editor/Data/Resources/PackageManager/ProjectTemplates",
-    },
-    darwin: {
-      base: "/Applications/Unity/Hub/Editor",
-      executable: "Unity.app/Contents/MacOS/Unity",
-      templates: "Editor/Data/Resources/PackageManager/ProjectTemplates",
-    },
-    linux: {
-      base: "/opt/unity/editor",
-      executable: "Editor/Unity",
-      templates: "",
-    },
-  };
+  private static unityConfig: UnityEditorPaths = UnityConfig.getPlatformConfig().editor;
 
   /**
    * Resolves the platform-specific path to the Unity executable for a given version.
@@ -57,10 +34,7 @@ class UnityEditor {
    * const unityPath = UnityEditor.getUnityExecutablePath("2022.3.15f1");
    */
   public static getUnityExecutablePath(version: string): string {
-    const platform = os.platform() as keyof typeof UnityEditor.UNITY_PATHS;
-    const unityConfig = UnityEditor.UNITY_PATHS[platform];
-
-    const unityPath = path.join(unityConfig.base, version, unityConfig.executable);
+    const unityPath = path.join(this.unityConfig.base, version, this.unityConfig.executable);
     return unityPath;
   }
 
@@ -76,10 +50,7 @@ class UnityEditor {
    * @throws {Error} If the current platform is not supported (not win32, darwin, or linux)
    */
   public static getUnityTemplatesPath(version: string): string {
-    const platform = os.platform() as keyof typeof UnityEditor.UNITY_PATHS;
-    const unityConfig = UnityEditor.UNITY_PATHS[platform];
-
-    const unityPath = path.join(unityConfig.base, version, unityConfig.templates);
+    const unityPath = path.join(this.unityConfig.base, version, this.unityConfig.projectTemplates);
     return unityPath;
   }
 
