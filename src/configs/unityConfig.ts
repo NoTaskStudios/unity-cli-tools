@@ -69,6 +69,8 @@ const UNITY_HUB_PATHS: Record<string, UnityHubPaths> = {
 
 /**
  * Configuration paths for Unity Editor executables across different operating systems.
+ * The structure provides base installation directories and relative paths to the
+ * executable for each supported platform (Windows, macOS, Linux).
  */
 const UNITY_EDITOR_PATHS: Record<string, UnityEditorPaths> = {
   win32: {
