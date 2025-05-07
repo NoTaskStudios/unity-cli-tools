@@ -18,12 +18,6 @@ import { PlatformConfig, UnityConfig } from "./configs/unityConfig.ts";
  */
 class UnityHub {
   /**
-   * Path to Unity Hub executable
-   * @internal
-   */
-  private static hubPath: string = this.getUnityHubPath();
-
-  /**
    * Platform-specific configuration for Unity Hub
    * @internal
    */
@@ -64,7 +58,8 @@ class UnityHub {
    */
   public static async isUnityHubAvailable(): Promise<boolean> {
     try {
-      return !!this.hubPath && fs.existsSync(this.hubPath);
+      const hubPath = this.getUnityHubPath();
+      return !!hubPath && fs.existsSync(hubPath);
     } catch (error) {
       console.error("Error checking Unity Hub availability:", error);
       return false;
@@ -97,9 +92,9 @@ class UnityHub {
 
     try {
       const hubArgs = [this.unityConfig.platform !== "linux" ? "--" : "", "--headless", ...args].filter(Boolean);
-      console.debug(`Executing Unity Hub command: ${this.hubPath} ${hubArgs.join(" ")}`);
+      console.debug(`Executing Unity Hub command: ${this.getUnityHubPath()} ${hubArgs.join(" ")}`);
 
-      return await executeCommand(this.hubPath, hubArgs, options);
+      return await executeCommand(this.unityConfig.hub.hubDir, hubArgs, options);
     } catch (error) {
       console.error("Error executing Unity Hub command:", error);
       return {
