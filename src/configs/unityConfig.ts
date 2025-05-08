@@ -29,6 +29,11 @@ interface UnityEditorPaths {
   projectTemplates: string;
 }
 
+interface UnityTemplatePaths {
+  /** Path to the Unity project templates */
+  projectTemplates: string;
+}
+
 /**
  * Interface for platform-specific Unity configuration
  */
@@ -38,6 +43,9 @@ interface PlatformConfig {
 
   /** The path to the Unity Hub executable */
   hub: UnityHubPaths;
+
+  /** The path to the Unity project templates */
+  templates: UnityTemplatePaths;
 
   /** The platform name (e.g., "win32", "darwin", "linux") */
   platform: string;
@@ -111,6 +119,9 @@ class UnityConfig {
         projects: unityHubPaths.projects,
         projectDir: unityHubPaths.projectDir,
       },
+      templates: {
+        projectTemplates: environment.unityProjectTemplatePath ?? unityEditorPaths.projectTemplates,
+      },
       platform,
       architecture: os.arch(),
     };
@@ -127,4 +138,4 @@ const environment = {
 };
 
 export { UnityConfig };
-export type { UnityHubPaths, UnityEditorPaths, PlatformConfig };
+export type { UnityHubPaths, UnityEditorPaths, UnityTemplatePaths, PlatformConfig };
