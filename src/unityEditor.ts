@@ -14,7 +14,7 @@ import { UnityConfig, UnityEditorPaths } from "./configs/unityConfig.ts";
  */
 class UnityEditor {
   /**
-   * Platform-specific configuration for Unity Hub
+   * Platform-specific configuration for Unity Editor paths.
    * @internal
    */
   private static unityConfig: UnityEditorPaths = UnityConfig.getPlatformConfig().editor;
@@ -557,6 +557,74 @@ class UnityEditor {
       }
     } catch (error) {
       console.error("Error creating project:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Creates a new Unity project from a specified template.
+   * This function initializes a Unity project using an existing template,
+   * allowing for rapid project setup with predefined assets and settings.
+   *
+   * @public
+   * @static
+   * @param {ProjectInfo} projectInfo - Information about the project to create, including:
+   *                                   - path: Where to create the project
+   *                                   - editorVersion: Which Unity version to use
+   * @param {string} templatePath - The path to the template to use for the project, you can get templates path with unityTemplates.ts
+   * @param {boolean} [waitForExit=true] - Whether to wait for Unity to exit after creating the project
+   *                                      Set to false to keep Unity open after project creation
+   * @returns {Promise<boolean>} - Promise resolving to true if project creation was successful, false otherwise
+   * @example
+   *
+   * const success = await UnityEditor.createProjectFromTemplate(
+   *   {
+   *     path: "/path/to/new/MyAwesomeGame",
+   *     editorVersion: "2022.3.15f1"
+   *   },
+   *   "/path/to/template"
+   * );
+   *
+   * if (success) {
+   *   console.log("Project created from template successfully");
+   * } else {
+   *   console.error("Project creation from template failed");
+   * }
+   */
+  public static async createProjectFromTemplate(
+    projectInfo: ProjectInfo,
+    templatePath: string,
+    quit: boolean = false,
+    useHub: boolean = true
+  ): Promise<boolean> {
+    try {
+      console.debug(`Creating new project from template at ${projectInfo.projectPath}`);
+
+      const parentDir = path.dirname(projectInfo.projectPath);
+      await fs.ensureDir(parentDir);
+
+      const args = ["-createProject", projectInfo.projectPath, "-cloneFromTemplate", templatePath];
+
+      if (quit) args.push("-quit");
+      if (useHub) args.push("-useHub", "-hubIPC");
+
+      const editorInfo = { version: projectInfo.editorVersion };
+      const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, {
+        reject: false,
+      });
+
+      const creationSuccessful =
+        !stdout.includes("Failed to create project") && !stderr.includes("Failed to create project");
+
+      if (creationSuccessful) {
+        console.debug(`Successfully created project from template at ${projectInfo.projectPath}`);
+        return true;
+      } else {
+        console.error(`Failed to create project from template: ${stderr || stdout}`);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error creating project from template:", error);
       return false;
     }
   }
