@@ -511,8 +511,9 @@ class UnityEditor {
    * @param {ProjectInfo} projectInfo - Information about the project to create, including:
    *                                   - path: Where to create the project
    *                                   - editorVersion: Which Unity version to use
-   * @param {boolean} [waitForExit=true] - Whether to wait for Unity to exit after creating the project
+   * @param {boolean} [quit=false] - Whether to wait for Unity to exit after creating the project
    *                                      Set to false to keep Unity open after project creation
+   * @param {boolean} [useHub=true] - Whether to use Unity Hub for creating the project
    * @returns {Promise<boolean>} - Promise resolving to true if project creation was successful, false otherwise
    * @example
    * // Create a new project using Unity 2022.3.15f1
@@ -577,8 +578,9 @@ class UnityEditor {
    *                                   - path: Where to create the project
    *                                   - editorVersion: Which Unity version to use
    * @param {string} templatePath - The path to the template to use for the project, you can get templates path with unityTemplates.ts
-   * @param {boolean} [waitForExit=true] - Whether to wait for Unity to exit after creating the project
+   * @param {boolean} [quit=false] - Whether to wait for Unity to exit after creating the project
    *                                      Set to false to keep Unity open after project creation
+   * @param {boolean} [useHub=true] - Whether to use Unity Hub for creating the project
    * @returns {Promise<boolean>} - Promise resolving to true if project creation was successful, false otherwise
    * @example
    *
