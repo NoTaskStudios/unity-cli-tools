@@ -1,3 +1,21 @@
+# [1.2.0-rc.1](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.1.2...1.2.0-rc.1) (2025-05-08)
+
+
+### Bug Fixes
+
+* **Hub:** Remove hubPath field ([9b1b737](https://github.com/NoTaskStudios/unity-cli-tools/commit/9b1b737d90c91322872d715f86c9f7f53ae8c1ea))
+* put return type on local functions ([1eef3de](https://github.com/NoTaskStudios/unity-cli-tools/commit/1eef3de26b03481cfc5476caa2d13a62b6fe0bdb))
+
+
+### Features
+
+* **Config:**  Create a entity to handle configurations ([ef8f34f](https://github.com/NoTaskStudios/unity-cli-tools/commit/ef8f34f143e2dcb1f1585588df23033ac68d3d80))
+* **Config:** Added Template path and interfaces ([7ec4de0](https://github.com/NoTaskStudios/unity-cli-tools/commit/7ec4de0d9a22c50094d1ed027d3fa068245a9f73))
+* **Config:** Create unity path types ([5b329bb](https://github.com/NoTaskStudios/unity-cli-tools/commit/5b329bb621b715bfaa63ead294d71c7bc8510fe2))
+* **Editor:** Added cloneFromTemplate function ([149c389](https://github.com/NoTaskStudios/unity-cli-tools/commit/149c389c3421a8d88b06cdc32e690afa40b68f27))
+* **Template:** Added UnityTemplates class for editor templates ([fca3256](https://github.com/NoTaskStudios/unity-cli-tools/commit/fca3256a14c4f8a8af701ced2f6449798f196020))
+* **Template:** Template path configuration ([1067deb](https://github.com/NoTaskStudios/unity-cli-tools/commit/1067deb516d3ef7e4d5bb6f26298be44f3763774))
+
 ## [1.1.2](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.1.1...1.1.2) (2025-05-04)
 
 
