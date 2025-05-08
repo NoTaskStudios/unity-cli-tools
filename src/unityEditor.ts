@@ -529,7 +529,11 @@ class UnityEditor {
    *   console.error("Project creation failed");
    * }
    */
-  public static async createProject(projectInfo: ProjectInfo, waitForExit: boolean = true): Promise<boolean> {
+  public static async createProject(
+    projectInfo: ProjectInfo,
+    quit: boolean = false,
+    useHub: boolean = true
+  ): Promise<boolean> {
     try {
       console.debug(`Creating new project at ${projectInfo.projectPath}`);
 
@@ -537,8 +541,9 @@ class UnityEditor {
       await fs.ensureDir(parentDir);
 
       const args = ["-createProject", projectInfo.projectPath];
+      if (useHub) args.push("-useHub", "-hubIPC");
 
-      if (waitForExit) args.push("-quit");
+      if (quit) args.push("-quit");
 
       const editorInfo = { version: projectInfo.editorVersion };
       const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, {
