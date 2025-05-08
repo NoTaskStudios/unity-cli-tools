@@ -1,9 +1,9 @@
-import os from "os";
 import fs from "fs-extra";
 import path from "path";
 import { ProjectInfo, TestMode, UnityBuildTarget, UnityEditorInfo } from "./types/unity.js";
 import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
 import { redactSensitiveArgs } from "./utils/security.js";
+import { UnityConfig, UnityEditorPaths } from "./configs/unityConfig.ts";
 
 /**
  * UnityEditor class provides a comprehensive interface for interacting with the Unity game engine editor
@@ -14,30 +14,10 @@ import { redactSensitiveArgs } from "./utils/security.js";
  */
 class UnityEditor {
   /**
-   * Configuration paths for Unity Editor executables across different operating systems.
-   * The structure provides base installation directories and relative paths to the
-   * executable for each supported platform (Windows, macOS, Linux).
-   *
-   * @private
-   * @static
-   * @type {Object<string, {base: string, executable: string}>}
-   *
+   * Platform-specific configuration for Unity Editor paths.
    * @internal
    */
-  private static UNITY_PATHS = {
-    win32: {
-      base: "C:/Program Files/Unity/Hub/Editor",
-      executable: "Editor/Unity.exe",
-    },
-    darwin: {
-      base: "/Applications/Unity/Hub/Editor",
-      executable: "Unity.app/Contents/MacOS/Unity",
-    },
-    linux: {
-      base: "/opt/unity/editor",
-      executable: "Editor/Unity",
-    },
-  };
+  private static unityConfig: UnityEditorPaths = UnityConfig.getPlatformConfig().editor;
 
   /**
    * Resolves the platform-specific path to the Unity executable for a given version.
@@ -54,10 +34,23 @@ class UnityEditor {
    * const unityPath = UnityEditor.getUnityExecutablePath("2022.3.15f1");
    */
   public static getUnityExecutablePath(version: string): string {
-    const platform = os.platform() as keyof typeof UnityEditor.UNITY_PATHS;
-    const unityConfig = UnityEditor.UNITY_PATHS[platform];
+    const unityPath = path.join(this.unityConfig.base, version, this.unityConfig.executable);
+    return unityPath;
+  }
 
-    const unityPath = path.join(unityConfig.base, version, unityConfig.executable);
+  /**
+   * Resolves the platform-specific path to the Unity templates directory for a given version.
+   * This function detects the current operating system and combines the appropriate
+   * base path with the version-specific subdirectory and templates location.
+   *
+   * @public
+   * @static
+   * @param {string} version - Unity editor version in the format "YYYY.N.XfN" (e.g., "2023.3.0f1")
+   * @returns {string} Absolute path to the Unity templates directory for the specified version
+   * @throws {Error} If the current platform is not supported (not win32, darwin, or linux)
+   */
+  public static getUnityTemplatesPath(version: string): string {
+    const unityPath = path.join(this.unityConfig.base, version, this.unityConfig.projectTemplates);
     return unityPath;
   }
 
@@ -518,8 +511,9 @@ class UnityEditor {
    * @param {ProjectInfo} projectInfo - Information about the project to create, including:
    *                                   - path: Where to create the project
    *                                   - editorVersion: Which Unity version to use
-   * @param {boolean} [waitForExit=true] - Whether to wait for Unity to exit after creating the project
+   * @param {boolean} [quit=false] - Whether to wait for Unity to exit after creating the project
    *                                      Set to false to keep Unity open after project creation
+   * @param {boolean} [useHub=true] - Whether to use Unity Hub for creating the project
    * @returns {Promise<boolean>} - Promise resolving to true if project creation was successful, false otherwise
    * @example
    * // Create a new project using Unity 2022.3.15f1
@@ -536,7 +530,11 @@ class UnityEditor {
    *   console.error("Project creation failed");
    * }
    */
-  public static async createProject(projectInfo: ProjectInfo, waitForExit: boolean = true): Promise<boolean> {
+  public static async createProject(
+    projectInfo: ProjectInfo,
+    quit: boolean = false,
+    useHub: boolean = true
+  ): Promise<boolean> {
     try {
       console.debug(`Creating new project at ${projectInfo.projectPath}`);
 
@@ -544,10 +542,9 @@ class UnityEditor {
       await fs.ensureDir(parentDir);
 
       const args = ["-createProject", projectInfo.projectPath];
+      if (useHub) args.push("-useHub", "-hubIPC");
 
-      if (waitForExit) {
-        args.push("-quit");
-      }
+      if (quit) args.push("-quit");
 
       const editorInfo = { version: projectInfo.editorVersion };
       const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, {
@@ -566,6 +563,75 @@ class UnityEditor {
       }
     } catch (error) {
       console.error("Error creating project:", error);
+      return false;
+    }
+  }
+
+  /**
+   * Creates a new Unity project from a specified template.
+   * This function initializes a Unity project using an existing template,
+   * allowing for rapid project setup with predefined assets and settings.
+   *
+   * @public
+   * @static
+   * @param {ProjectInfo} projectInfo - Information about the project to create, including:
+   *                                   - path: Where to create the project
+   *                                   - editorVersion: Which Unity version to use
+   * @param {string} templatePath - The path to the template to use for the project, you can get templates path with unityTemplates.ts
+   * @param {boolean} [quit=false] - Whether to wait for Unity to exit after creating the project
+   *                                      Set to false to keep Unity open after project creation
+   * @param {boolean} [useHub=true] - Whether to use Unity Hub for creating the project
+   * @returns {Promise<boolean>} - Promise resolving to true if project creation was successful, false otherwise
+   * @example
+   *
+   * const success = await UnityEditor.createProjectFromTemplate(
+   *   {
+   *     path: "/path/to/new/MyAwesomeGame",
+   *     editorVersion: "2022.3.15f1"
+   *   },
+   *   "/path/to/template"
+   * );
+   *
+   * if (success) {
+   *   console.log("Project created from template successfully");
+   * } else {
+   *   console.error("Project creation from template failed");
+   * }
+   */
+  public static async createProjectFromTemplate(
+    projectInfo: ProjectInfo,
+    templatePath: string,
+    quit: boolean = false,
+    useHub: boolean = true
+  ): Promise<boolean> {
+    try {
+      console.debug(`Creating new project from template at ${projectInfo.projectPath}`);
+
+      const parentDir = path.dirname(projectInfo.projectPath);
+      await fs.ensureDir(parentDir);
+
+      const args = ["-createProject", projectInfo.projectPath, "-cloneFromTemplate", templatePath];
+
+      if (quit) args.push("-quit");
+      if (useHub) args.push("-useHub", "-hubIPC");
+
+      const editorInfo = { version: projectInfo.editorVersion };
+      const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, {
+        reject: false,
+      });
+
+      const creationSuccessful =
+        !stdout.includes("Failed to create project") && !stderr.includes("Failed to create project");
+
+      if (creationSuccessful) {
+        console.debug(`Successfully created project from template at ${projectInfo.projectPath}`);
+        return true;
+      } else {
+        console.error(`Failed to create project from template: ${stderr || stdout}`);
+        return false;
+      }
+    } catch (error) {
+      console.error("Error creating project from template:", error);
       return false;
     }
   }
@@ -610,17 +676,9 @@ class UnityEditor {
 
       const args = ["-projectPath", projectInfo.projectPath];
 
-      if (waitForExit) {
-        args.push("-quit");
-      }
-
-      if (batchmode) {
-        args.push("-batchmode");
-      }
-
-      if (useHub) {
-        args.push(...["-useHub", "-hubIPC"]);
-      }
+      if (waitForExit) args.push("-quit");
+      if (batchmode) args.push("-batchmode");
+      if (useHub) args.push(...["-useHub", "-hubIPC"]);
 
       const editorInfo = { version: projectInfo.editorVersion };
       const options = { reject: false };

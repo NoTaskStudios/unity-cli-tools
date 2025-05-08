@@ -1,6 +1,5 @@
 import fs from "fs-extra";
 import os from "os";
-import path from "path";
 import {
   EditorArchitecture,
   ModuleId,
@@ -11,6 +10,7 @@ import {
 import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
 import { getUnityChangeset } from "unity-changeset";
 import { UnityHubInstallerEvent } from "./events/hubEventEmitter.ts";
+import { PlatformConfig, UnityConfig } from "./configs/unityConfig.ts";
 
 /**
  * Class for interacting with Unity Hub via command line interface
@@ -18,38 +18,10 @@ import { UnityHubInstallerEvent } from "./events/hubEventEmitter.ts";
  */
 class UnityHub {
   /**
-   * Platform-specific paths for Unity Hub components
-   * @private
-   */
-  private static CONFIG_PATHS = {
-    win32: {
-      hub: "C:\\Program Files\\Unity Hub\\Unity Hub.exe",
-      projects: path.join(os.homedir(), "AppData", "Roaming", "UnityHub", "projects-v1.json"),
-      projectDir: path.join(os.homedir(), "AppData", "Roaming", "UnityHub", "projectDir.json"),
-    },
-    darwin: {
-      hub: "/Applications/Unity Hub.app/Contents/MacOS/Unity Hub",
-      projects: path.join(os.homedir(), "Library", "Application Support", "UnityHub", "projects-v1.json"),
-      projectDir: path.join(os.homedir(), "Library", "Application Support", "UnityHub", "projectDir.json"),
-    },
-    linux: {
-      hub: "/opt/UnityHub/UnityHub",
-      projects: path.join(os.homedir(), ".config", "UnityHub", "projects-v1.json"),
-      projectDir: path.join(os.homedir(), ".config", "UnityHub", "projectDir.json"),
-    },
-  };
-
-  /**
-   * Current platform (win32, darwin, linux)
+   * Platform-specific configuration for Unity Hub
    * @internal
    */
-  private static platform: string = os.platform() as keyof typeof UnityHub.CONFIG_PATHS;
-
-  /**
-   * Path to Unity Hub executable
-   * @internal
-   */
-  private static hubPath: string = this.getUnityHubPath();
+  private static unityConfig: PlatformConfig = UnityConfig.getPlatformConfig();
 
   /**
    * Gets the Unity Hub executable path based on environment variable or default locations
@@ -57,12 +29,7 @@ class UnityHub {
    * @public
    */
   public static getUnityHubPath(): string {
-    const envPath = process.env.UNITY_HUB_PATH ?? "";
-    if (envPath && fs.existsSync(envPath)) {
-      return envPath;
-    }
-
-    return UnityHub.CONFIG_PATHS[this.platform as keyof typeof UnityHub.CONFIG_PATHS].hub || "";
+    return this.unityConfig.hub.hubDir;
   }
 
   /**
@@ -71,7 +38,7 @@ class UnityHub {
    * @internal
    */
   private static getProjectsPath(): string {
-    return UnityHub.CONFIG_PATHS[this.platform as keyof typeof UnityHub.CONFIG_PATHS].projects || "";
+    return this.unityConfig.hub.projects;
   }
 
   /**
@@ -80,7 +47,7 @@ class UnityHub {
    * @internal
    */
   private static getProjectDirPath(): string {
-    return UnityHub.CONFIG_PATHS[this.platform as keyof typeof UnityHub.CONFIG_PATHS].projectDir || "";
+    return this.unityConfig.hub.projectDir;
   }
 
   /**
@@ -91,7 +58,8 @@ class UnityHub {
    */
   public static async isUnityHubAvailable(): Promise<boolean> {
     try {
-      return !!this.hubPath && fs.existsSync(this.hubPath);
+      const hubPath = this.getUnityHubPath();
+      return !!hubPath && fs.existsSync(hubPath);
     } catch (error) {
       console.error("Error checking Unity Hub availability:", error);
       return false;
@@ -123,10 +91,10 @@ class UnityHub {
     }
 
     try {
-      const hubArgs = [this.platform !== "linux" ? "--" : "", "--headless", ...args].filter(Boolean);
-      console.debug(`Executing Unity Hub command: ${this.hubPath} ${hubArgs.join(" ")}`);
+      const hubArgs = [this.unityConfig.platform !== "linux" ? "--" : "", "--headless", ...args].filter(Boolean);
+      console.debug(`Executing Unity Hub command: ${this.getUnityHubPath()} ${hubArgs.join(" ")}`);
 
-      return await executeCommand(this.hubPath, hubArgs, options);
+      return await executeCommand(this.unityConfig.hub.hubDir, hubArgs, options);
     } catch (error) {
       console.error("Error executing Unity Hub command:", error);
       return {
