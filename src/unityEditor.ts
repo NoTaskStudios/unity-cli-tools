@@ -2,8 +2,19 @@ import os from "os";
 import fs from "fs-extra";
 import path from "path";
 import { ProjectInfo, TestMode, UnityBuildTarget, UnityEditorInfo } from "./types/unity.js";
-import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
+import { CommandOptions, CommandOutput, executeCommand } from "./utils/commandExecutor.js";
 import { redactSensitiveArgs } from "./utils/security.js";
+import {
+  Result,
+  ok,
+  err,
+  UnityEditorNotFoundError,
+  UnityCommandError,
+  UnityTestError,
+  UnityLicenseError,
+  UnityPackageError,
+  UnityProjectError,
+} from "./errors/index.js";
 
 /**
  * UnityEditor class provides a comprehensive interface for interacting with the Unity game engine editor
@@ -102,46 +113,25 @@ class UnityEditor {
    * @param {boolean} [options.reject=false] - Whether to reject the promise on error or return error information
    * @param {number} [options.timeout] - Optional timeout in milliseconds after which the command execution is aborted
    * @param {Object} [options.env] - Optional environment variables to pass to the command
-   * @returns {Promise<CommandResult>} Promise resolving to an object containing execution results:
-   *                                   - success: boolean indicating command success
-   *                                   - stdout: captured standard output
-   *                                   - stderr: captured standard error
-   *                                   - exitCode: process exit code
-   * @throws {Error} Will throw if command execution fails and reject option is true
+   * @returns {Promise<Result<CommandOutput>>} Result containing command output or error
    */
   public static async execUnityEditorCommand(
     editorInfo: UnityEditorInfo,
     args: string[],
     options: CommandOptions = {}
-  ): Promise<CommandResult> {
-    try {
-      const unityPath = this.getUnityExecutablePath(editorInfo.version);
+  ): Promise<Result<CommandOutput, UnityEditorNotFoundError | UnityCommandError>> {
+    const unityPath = this.getUnityExecutablePath(editorInfo.version);
 
-      if (!fs.existsSync(unityPath)) {
-        return {
-          success: false,
-          stdout: "",
-          stderr: `Unity executable not found at path: ${unityPath}`,
-          exitCode: -1,
-        };
-      }
-
-      const editorArgs = [...args];
-      const redactedArgs = redactSensitiveArgs(editorArgs);
-
-      console.debug(`Executing Unity Editor command: ${unityPath} ${redactedArgs.join(" ")}`);
-
-      return await executeCommand(unityPath, editorArgs, options);
-    } catch (error) {
-      console.error("Error executing Unity Editor command:", error);
-
-      return {
-        success: false,
-        stdout: "",
-        stderr: String(error),
-        exitCode: -1,
-      };
+    if (!fs.existsSync(unityPath)) {
+      return err(new UnityEditorNotFoundError(editorInfo.version, unityPath));
     }
+
+    const editorArgs = [...args];
+    const redactedArgs = redactSensitiveArgs(editorArgs);
+
+    console.debug(`Executing Unity Editor command: ${unityPath} ${redactedArgs.join(" ")}`);
+
+    return await executeCommand(unityPath, editorArgs, options);
   }
 
   /**
@@ -155,57 +145,53 @@ class UnityEditor {
    * @param {string} method - Fully qualified method name to execute (e.g., "MyNamespace.MyEditorClass.MyStaticMethod")
    * @param {string[]} [args=[]] - Optional arguments to pass to the method
    * @param {CommandOptions} [options={}] - Command execution options
-   * @returns {Promise<string|null>} - Promise resolving to the method's output or null if execution failed
+   * @returns {Promise<Result<CommandOutput>>} Result containing method output or error
    * @example
    * // Execute a build method defined in a custom editor script
-   * const output = await UnityEditor.executeMethod(
-   *   { path: "/path/to/project", editorVersion: "2022.3.15f1" },
+   * const result = await UnityEditor.executeMethod(
+   *   { projectPath: "/path/to/project", editorVersion: "2022.3.15f1", projectName: "MyGame" },
    *   "MyCompany.BuildTools.PerformBuild"
    * );
+   * if (result.success) {
+   *   console.log("Method executed successfully:", result.value.stdout);
+   * }
    */
   public static async executeMethod(
     projectInfo: ProjectInfo,
     method: string,
     args: string[] = [],
     options: CommandOptions = {}
-  ): Promise<CommandResult> {
-    try {
-      console.debug(`Executing method ${method} in Unity Editor`);
+  ): Promise<Result<CommandOutput, UnityEditorNotFoundError | UnityCommandError>> {
+    console.debug(`Executing method ${method} in Unity Editor`);
 
-      const unityPath = this.getUnityExecutablePath(projectInfo.editorVersion);
-      const editorArgs = ["-projectPath", projectInfo.projectPath, "-executeMethod", method, ...args];
+    const unityPath = this.getUnityExecutablePath(projectInfo.editorVersion);
+    const editorArgs = ["-projectPath", projectInfo.projectPath, "-executeMethod", method, ...args];
 
-      const { stdout, stderr } = await this.execUnityEditorCommand(
-        { version: projectInfo.editorVersion, path: unityPath },
-        editorArgs,
-        options
-      );
+    const result = await this.execUnityEditorCommand(
+      { version: projectInfo.editorVersion, path: unityPath },
+      editorArgs,
+      options
+    );
 
-      if (stderr) {
-        console.error(`Error executing method: ${stderr}`);
-        return {
-          success: false,
-          stdout: "",
-          stderr: stderr,
-          exitCode: -1,
-        };
-      }
-
-      return {
-        success: true,
-        stdout: stdout,
-        stderr: "",
-        exitCode: 0,
-      };
-    } catch (error) {
-      console.error("Error executing method:", error);
-      return {
-        success: false,
-        stdout: "",
-        stderr: String(error),
-        exitCode: -1,
-      };
+    if (!result.success) {
+      console.error(`Error executing method: ${result.error.message}`);
+      return result;
     }
+
+    if (result.value.stderr) {
+      console.error(`Error executing method: ${result.value.stderr}`);
+      return err(
+        new UnityCommandError(
+          `Error executing method ${method}: ${result.value.stderr}`,
+          result.value.stdout,
+          result.value.stderr,
+          result.value.exitCode,
+          { method, projectInfo }
+        )
+      );
+    }
+
+    return result;
   }
 
   /**
@@ -221,66 +207,67 @@ class UnityEditor {
    *                                      - TestMode.PlayMode: Run tests with the editor in play mode
    *                                      - Or specify a build target (e.g., UnityBuildTarget.StandaloneWindows64)
    * @param {string} [testCategory] - Optional category filter to run only tests with the specified category attribute
-   * @returns {Promise<{ success: boolean; output: string }>} - Promise resolving to test results:
-   *                                                          - success: Whether all tests passed
-   *                                                          - output: Test execution output
+   * @returns {Promise<Result<string>>} Result containing test output if all tests passed, or UnityTestError if tests failed
    * @example
    * // Run all PlayMode tests in the "Performance" category
-   * const results = await UnityEditor.runTests(
-   *   { path: "/path/to/project", editorVersion: "2022.3.15f1" },
+   * const result = await UnityEditor.runTests(
+   *   { projectPath: "/path/to/project", editorVersion: "2022.3.15f1", projectName: "MyGame" },
    *   TestMode.PlayMode,
    *   "Performance"
    * );
    *
-   * if (results.success) {
-   *   console.log("All tests passed!");
+   * if (result.success) {
+   *   console.log("All tests passed! Output:", result.value);
    * } else {
-   *   console.error("Tests failed. Output:", results.output);
+   *   console.error("Tests failed:", result.error.message);
+   *   console.error("Test output:", result.error.testOutput);
    * }
    */
   public static async runTests(
     projectInfo: ProjectInfo,
     testPlatform: TestMode | UnityBuildTarget = TestMode.EditMode,
     testCategory?: string
-  ): Promise<{ success: boolean; output: string }> {
-    try {
-      console.debug(`Running ${testPlatform} tests for project ${testCategory ? ` in category ${testCategory}` : ""}`);
+  ): Promise<Result<string, UnityEditorNotFoundError | UnityCommandError | UnityTestError>> {
+    console.debug(`Running ${testPlatform} tests for project${testCategory ? ` in category ${testCategory}` : ""}`);
 
-      const args = [
-        "-batchmode",
-        "-quit",
-        "-projectPath",
-        projectInfo.projectPath,
-        "-runTests",
-        "-testPlatform",
-        testPlatform,
-      ];
+    const args = [
+      "-batchmode",
+      "-quit",
+      "-projectPath",
+      projectInfo.projectPath,
+      "-runTests",
+      "-testPlatform",
+      testPlatform,
+    ];
 
-      if (testCategory) {
-        args.push("-testCategory", testCategory);
-      }
-
-      const editorInfo = { version: projectInfo.editorVersion };
-      const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, {
-        reject: false,
-      });
-
-      const testsFailed =
-        stdout.includes("Some tests failed") ||
-        stdout.includes("Test run failed") ||
-        stderr.includes("Test run failed");
-
-      return {
-        success: !testsFailed,
-        output: stdout,
-      };
-    } catch (error) {
-      console.error("Error running tests:", error);
-      return {
-        success: false,
-        output: String(error),
-      };
+    if (testCategory) {
+      args.push("-testCategory", testCategory);
     }
+
+    const editorInfo = { version: projectInfo.editorVersion };
+    const result = await this.execUnityEditorCommand(editorInfo, args, {
+      reject: false,
+    });
+
+    if (!result.success) {
+      return result;
+    }
+
+    const { stdout, stderr } = result.value;
+    const testsFailed =
+      stdout.includes("Some tests failed") || stdout.includes("Test run failed") || stderr.includes("Test run failed");
+
+    if (testsFailed) {
+      return err(
+        new UnityTestError("Some tests failed", stdout, {
+          projectInfo,
+          testPlatform,
+          testCategory,
+        })
+      );
+    }
+
+    return ok(stdout);
   }
 
   /**
@@ -294,20 +281,20 @@ class UnityEditor {
    * @param {string} serial - Unity license serial number (Pro/Plus/Enterprise license)
    * @param {string} username - Unity account username associated with the license
    * @param {string} password - Unity account password
-   * @returns {Promise<boolean>} - Promise resolving to true if license activation was successful, false otherwise
+   * @returns {Promise<Result<void>>} Result indicating success or license activation error
    * @example
    * // Activate a Unity Pro license
-   * const success = await UnityEditor.activateLicense(
-   *   { editorVersion: "2022.3.15f1", path: "/path/to/project" },
+   * const result = await UnityEditor.activateLicense(
+   *   { editorVersion: "2022.3.15f1", projectPath: "/path/to/project", projectName: "MyGame" },
    *   "XXXX-XXXX-XXXX-XXXX-XXXX",
    *   "username@example.com",
    *   "password123"
    * );
    *
-   * if (success) {
+   * if (result.success) {
    *   console.log("License activated successfully");
    * } else {
-   *   console.error("License activation failed");
+   *   console.error("License activation failed:", result.error.message);
    * }
    *
    * @security Note: It's recommended to pass credentials securely via environment variables
@@ -318,33 +305,37 @@ class UnityEditor {
     serial: string,
     username: string,
     password: string
-  ): Promise<boolean> {
-    try {
-      console.debug(`Activating Unity license for version ${projectInfo.editorVersion}`);
+  ): Promise<Result<void, UnityEditorNotFoundError | UnityCommandError | UnityLicenseError>> {
+    console.debug(`Activating Unity license for version ${projectInfo.editorVersion}`);
 
-      const args = ["-quit", "-serial", serial, "-username", username, "-password", password];
+    const args = ["-quit", "-serial", serial, "-username", username, "-password", password];
 
-      const editorInfo = { version: projectInfo.editorVersion };
-      const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, {
-        reject: false,
-      });
+    const editorInfo = { version: projectInfo.editorVersion };
+    const result = await this.execUnityEditorCommand(editorInfo, args, {
+      reject: false,
+    });
 
-      // Check if license activation was successful
-      const activationSuccessful =
-        stdout.includes("successfully activated") ||
-        (!stdout.includes("License activation failed") && !stderr.includes("License activation failed"));
-
-      if (activationSuccessful) {
-        console.debug(`Successfully activated license for Unity ${projectInfo.editorVersion}`);
-        return true;
-      } else {
-        console.error(`Failed to activate license: ${stderr || stdout}`);
-        return false;
-      }
-    } catch (error) {
-      console.error("Error activating license:", error);
-      return false;
+    if (!result.success) {
+      return result;
     }
+
+    const { stdout, stderr } = result.value;
+    const activationSuccessful =
+      stdout.includes("successfully activated") ||
+      (!stdout.includes("License activation failed") && !stderr.includes("License activation failed"));
+
+    if (activationSuccessful) {
+      console.debug(`Successfully activated license for Unity ${projectInfo.editorVersion}`);
+      return ok(undefined);
+    }
+
+    return err(
+      new UnityLicenseError(`Failed to activate license: ${stderr || stdout}`, {
+        projectInfo,
+        stderr,
+        stdout,
+      })
+    );
   }
 
   /**
@@ -355,46 +346,52 @@ class UnityEditor {
    * @public
    * @static
    * @param {ProjectInfo} projectInfo - Information about the project (used to determine Unity version)
-   * @returns {Promise<boolean>} - Promise resolving to true if license was successfully returned, false otherwise
+   * @returns {Promise<Result<void>>} Result indicating success or license return error
    * @example
    * // After completing build tasks, return the license
-   * const success = await UnityEditor.returnLicense(
-   *   { editorVersion: "2022.3.15f1", path: "/path/to/project" }
+   * const result = await UnityEditor.returnLicense(
+   *   { editorVersion: "2022.3.15f1", projectPath: "/path/to/project", projectName: "MyGame" }
    * );
    *
-   * if (success) {
+   * if (result.success) {
    *   console.log("License returned successfully");
    * } else {
-   *   console.error("Failed to return license");
+   *   console.error("Failed to return license:", result.error.message);
    * }
    */
-  public static async returnLicense(projectInfo: ProjectInfo): Promise<boolean> {
-    try {
-      console.debug(`Returning Unity license for version ${projectInfo.editorVersion}`);
+  public static async returnLicense(
+    projectInfo: ProjectInfo
+  ): Promise<Result<void, UnityEditorNotFoundError | UnityCommandError | UnityLicenseError>> {
+    console.debug(`Returning Unity license for version ${projectInfo.editorVersion}`);
 
-      const args = ["-quit", "-returnlicense"];
+    const args = ["-quit", "-returnlicense"];
 
-      const editorInfo = { version: projectInfo.editorVersion };
-      const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, {
-        reject: false,
-      });
+    const editorInfo = { version: projectInfo.editorVersion };
+    const result = await this.execUnityEditorCommand(editorInfo, args, {
+      reject: false,
+    });
 
-      // Check if license return was successful
-      const returnSuccessful =
-        stdout.includes("license return succeeded") ||
-        (!stdout.includes("Failed to return license") && !stderr.includes("Failed to return license"));
-
-      if (returnSuccessful) {
-        console.debug(`Successfully returned license for Unity ${projectInfo.editorVersion}`);
-        return true;
-      } else {
-        console.error(`Failed to return license: ${stderr || stdout}`);
-        return false;
-      }
-    } catch (error) {
-      console.error("Error returning license:", error);
-      return false;
+    if (!result.success) {
+      return result;
     }
+
+    const { stdout, stderr } = result.value;
+    const returnSuccessful =
+      stdout.includes("license return succeeded") ||
+      (!stdout.includes("Failed to return license") && !stderr.includes("Failed to return license"));
+
+    if (returnSuccessful) {
+      console.debug(`Successfully returned license for Unity ${projectInfo.editorVersion}`);
+      return ok(undefined);
+    }
+
+    return err(
+      new UnityLicenseError(`Failed to return license: ${stderr || stdout}`, {
+        projectInfo,
+        stderr,
+        stdout,
+      })
+    );
   }
 
   /**
@@ -408,51 +405,57 @@ class UnityEditor {
    * @param {string[]} assetPaths - Array of asset paths relative to the Assets folder to include in the package
    *                               (e.g., ["Prefabs/Player", "Scripts/Utils"])
    * @param {string} outputPath - Full path where the .unitypackage file should be saved
-   * @returns {Promise<boolean>} - Promise resolving to true if package export was successful, false otherwise
+   * @returns {Promise<Result<void>>} Result indicating success or package export error
    * @example
    * // Export a package containing UI assets and utilities
-   * const success = await UnityEditor.exportPackage(
-   *   { path: "/path/to/project", editorVersion: "2022.3.15f1" },
+   * const result = await UnityEditor.exportPackage(
+   *   { projectPath: "/path/to/project", editorVersion: "2022.3.15f1", projectName: "MyGame" },
    *   ["Assets/UI", "Assets/Scripts/Utilities"],
    *   "/path/to/output/UITools.unitypackage"
    * );
    *
-   * if (success) {
+   * if (result.success) {
    *   console.log("Package exported successfully");
    * } else {
-   *   console.error("Package export failed");
+   *   console.error("Package export failed:", result.error.message);
    * }
    */
   public static async exportPackage(
     projectInfo: ProjectInfo,
     assetPaths: string[],
     outputPath: string
-  ): Promise<boolean> {
-    try {
-      console.debug(`Exporting package from project`);
+  ): Promise<Result<void, UnityEditorNotFoundError | UnityCommandError | UnityPackageError>> {
+    console.debug(`Exporting package from project`);
 
-      const args = ["-projectPath", projectInfo.projectPath, "-exportPackage", ...assetPaths, outputPath, "-quit"];
+    const args = ["-projectPath", projectInfo.projectPath, "-exportPackage", ...assetPaths, outputPath, "-quit"];
 
-      const editorInfo = { version: projectInfo.editorVersion };
-      const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, {
-        reject: false,
-      });
+    const editorInfo = { version: projectInfo.editorVersion };
+    const result = await this.execUnityEditorCommand(editorInfo, args, {
+      reject: false,
+    });
 
-      // Check if package export was successful
-      const exportSuccessful =
-        !stdout.includes("Failed to export package") && !stderr.includes("Failed to export package");
-
-      if (exportSuccessful) {
-        console.debug(`Successfully exported package to ${outputPath}`);
-        return true;
-      } else {
-        console.error(`Failed to export package: ${stderr || stdout}`);
-        return false;
-      }
-    } catch (error) {
-      console.error("Error exporting package:", error);
-      return false;
+    if (!result.success) {
+      return result;
     }
+
+    const { stdout, stderr } = result.value;
+    const exportSuccessful =
+      !stdout.includes("Failed to export package") && !stderr.includes("Failed to export package");
+
+    if (exportSuccessful) {
+      console.debug(`Successfully exported package to ${outputPath}`);
+      return ok(undefined);
+    }
+
+    return err(
+      new UnityPackageError(`Failed to export package: ${stderr || stdout}`, {
+        projectInfo,
+        assetPaths,
+        outputPath,
+        stderr,
+        stdout,
+      })
+    );
   }
 
   /**
@@ -464,48 +467,57 @@ class UnityEditor {
    * @static
    * @param {ProjectInfo} projectInfo - Information about the target project
    * @param {string} packagePath - Full path to the .unitypackage file to import
-   * @returns {Promise<boolean>} - Promise resolving to true if package import was successful, false otherwise
+   * @returns {Promise<Result<void>>} Result indicating success or package import error
    * @example
    * // Import a third-party asset package into a project
-   * const success = await UnityEditor.importPackage(
-   *   { path: "/path/to/project", editorVersion: "2022.3.15f1" },
+   * const result = await UnityEditor.importPackage(
+   *   { projectPath: "/path/to/project", editorVersion: "2022.3.15f1", projectName: "MyGame" },
    *   "/path/to/downloads/AwesomeAssets.unitypackage"
    * );
    *
-   * if (success) {
+   * if (result.success) {
    *   console.log("Package imported successfully");
    * } else {
-   *   console.error("Package import failed");
+   *   console.error("Package import failed:", result.error.message);
    * }
    *
    * @note This operation may require user intervention for Unity versions that prompt
    *       for confirmation during package import, unless run in batchmode.
    */
-  public static async importPackage(projectInfo: ProjectInfo, packagePath: string): Promise<boolean> {
-    try {
-      console.debug(`Importing package ${packagePath} to project`);
+  public static async importPackage(
+    projectInfo: ProjectInfo,
+    packagePath: string
+  ): Promise<Result<void, UnityEditorNotFoundError | UnityCommandError | UnityPackageError>> {
+    console.debug(`Importing package ${packagePath} to project`);
 
-      const args = ["-projectPath", projectInfo.projectPath, "-importPackage", packagePath, "-quit"];
+    const args = ["-projectPath", projectInfo.projectPath, "-importPackage", packagePath, "-quit"];
 
-      const editorInfo = { version: projectInfo.editorVersion };
-      const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, {
-        reject: false,
-      });
+    const editorInfo = { version: projectInfo.editorVersion };
+    const result = await this.execUnityEditorCommand(editorInfo, args, {
+      reject: false,
+    });
 
-      const importSuccessful =
-        !stdout.includes("Failed to import package") && !stderr.includes("Failed to import package");
-
-      if (importSuccessful) {
-        console.debug(`Successfully imported package ${packagePath}`);
-        return true;
-      } else {
-        console.error(`Failed to import package: ${stderr || stdout}`);
-        return false;
-      }
-    } catch (error) {
-      console.error("Error importing package:", error);
-      return false;
+    if (!result.success) {
+      return result;
     }
+
+    const { stdout, stderr } = result.value;
+    const importSuccessful =
+      !stdout.includes("Failed to import package") && !stderr.includes("Failed to import package");
+
+    if (importSuccessful) {
+      console.debug(`Successfully imported package ${packagePath}`);
+      return ok(undefined);
+    }
+
+    return err(
+      new UnityPackageError(`Failed to import package: ${stderr || stdout}`, {
+        projectInfo,
+        packagePath,
+        stderr,
+        stdout,
+      })
+    );
   }
 
   /**
@@ -516,30 +528,34 @@ class UnityEditor {
    * @public
    * @static
    * @param {ProjectInfo} projectInfo - Information about the project to create, including:
-   *                                   - path: Where to create the project
+   *                                   - projectPath: Where to create the project
    *                                   - editorVersion: Which Unity version to use
    * @param {boolean} [waitForExit=true] - Whether to wait for Unity to exit after creating the project
    *                                      Set to false to keep Unity open after project creation
-   * @returns {Promise<boolean>} - Promise resolving to true if project creation was successful, false otherwise
+   * @returns {Promise<Result<void>>} Result indicating success or project creation error
    * @example
    * // Create a new project using Unity 2022.3.15f1
-   * const success = await UnityEditor.createProject(
+   * const result = await UnityEditor.createProject(
    *   {
-   *     path: "/path/to/new/MyAwesomeGame",
-   *     editorVersion: "2022.3.15f1"
+   *     projectPath: "/path/to/new/MyAwesomeGame",
+   *     editorVersion: "2022.3.15f1",
+   *     projectName: "MyAwesomeGame"
    *   }
    * );
    *
-   * if (success) {
+   * if (result.success) {
    *   console.log("Project created successfully");
    * } else {
-   *   console.error("Project creation failed");
+   *   console.error("Project creation failed:", result.error.message);
    * }
    */
-  public static async createProject(projectInfo: ProjectInfo, waitForExit: boolean = true): Promise<boolean> {
-    try {
-      console.debug(`Creating new project at ${projectInfo.projectPath}`);
+  public static async createProject(
+    projectInfo: ProjectInfo,
+    waitForExit: boolean = true
+  ): Promise<Result<void, UnityEditorNotFoundError | UnityCommandError | UnityProjectError>> {
+    console.debug(`Creating new project at ${projectInfo.projectPath}`);
 
+    try {
       const parentDir = path.dirname(projectInfo.projectPath);
       await fs.ensureDir(parentDir);
 
@@ -550,23 +566,33 @@ class UnityEditor {
       }
 
       const editorInfo = { version: projectInfo.editorVersion };
-      const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, {
+      const result = await this.execUnityEditorCommand(editorInfo, args, {
         reject: false,
       });
 
+      if (!result.success) {
+        return result;
+      }
+
+      const { stdout, stderr } = result.value;
       const creationSuccessful =
         !stdout.includes("Failed to create project") && !stderr.includes("Failed to create project");
 
       if (creationSuccessful) {
         console.debug(`Successfully created project at ${projectInfo.projectPath}`);
-        return true;
-      } else {
-        console.error(`Failed to create project: ${stderr || stdout}`);
-        return false;
+        return ok(undefined);
       }
+
+      return err(
+        new UnityProjectError(`Failed to create project: ${stderr || stdout}`, {
+          projectInfo,
+          stderr,
+          stdout,
+        })
+      );
     } catch (error) {
       console.error("Error creating project:", error);
-      return false;
+      return err(new UnityProjectError(`Error creating project: ${String(error)}`, { projectInfo }));
     }
   }
 
@@ -583,64 +609,67 @@ class UnityEditor {
    *                                     Use true for CI/CD pipelines or server environments
    * @param {boolean} [waitForExit=true] - Whether to wait for Unity to exit before resolving the promise
    *                                      Set to false for launching the editor without blocking
-   * @returns {Promise<boolean>} - Promise resolving to true if project opening was successful, false otherwise
+   * @returns {Promise<Result<void>>} Result indicating success or project opening error
    * @example
    * // Open a project in batch mode for automated processing
-   * const success = await UnityEditor.openProject(
-   *   { path: "/path/to/project", editorVersion: "2022.3.15f1" },
+   * const result = await UnityEditor.openProject(
+   *   { projectPath: "/path/to/project", editorVersion: "2022.3.15f1", projectName: "MyGame" },
+   *   true,  // useHub
    *   true,  // batchmode
    *   true   // waitForExit
    * );
    *
-   * // Launch the editor UI for interactive use
-   * await UnityEditor.openProject(
-   *   { path: "/path/to/project", editorVersion: "2022.3.15f1" },
-   *   false, // with UI
-   *   false  // don't wait for exit
-   * );
+   * if (result.success) {
+   *   console.log("Project opened successfully");
+   * } else {
+   *   console.error("Failed to open project:", result.error.message);
+   * }
    */
   public static async openProject(
     projectInfo: ProjectInfo,
     useHub: boolean = true,
     batchmode: boolean = false,
     waitForExit: boolean = true
-  ): Promise<boolean> {
-    try {
-      console.debug(`Opening project at ${projectInfo.projectPath}`);
+  ): Promise<Result<void, UnityEditorNotFoundError | UnityCommandError | UnityProjectError>> {
+    console.debug(`Opening project at ${projectInfo.projectPath}`);
 
-      const args = ["-projectPath", projectInfo.projectPath];
+    const args = ["-projectPath", projectInfo.projectPath];
 
-      if (waitForExit) {
-        args.push("-quit");
-      }
-
-      if (batchmode) {
-        args.push("-batchmode");
-      }
-
-      if (useHub) {
-        args.push(...["-useHub", "-hubIPC"]);
-      }
-
-      const editorInfo = { version: projectInfo.editorVersion };
-      const options = { reject: false };
-
-      const { stdout, stderr } = await this.execUnityEditorCommand(editorInfo, args, options);
-
-      const openingSuccessful =
-        !stdout.includes("Failed to open project") && !stderr.includes("Failed to open project");
-
-      if (openingSuccessful) {
-        console.debug(`Successfully opened project`);
-      } else {
-        console.error(`Failed to open project: ${stderr || stdout}`);
-      }
-
-      return openingSuccessful;
-    } catch (error) {
-      console.error("Error opening project:", error);
-      return false;
+    if (waitForExit) {
+      args.push("-quit");
     }
+
+    if (batchmode) {
+      args.push("-batchmode");
+    }
+
+    if (useHub) {
+      args.push("-useHub", "-hubIPC");
+    }
+
+    const editorInfo = { version: projectInfo.editorVersion };
+    const result = await this.execUnityEditorCommand(editorInfo, args, { reject: false });
+
+    if (!result.success) {
+      return result;
+    }
+
+    const { stdout, stderr } = result.value;
+    const openingSuccessful =
+      !stdout.includes("Failed to open project") && !stderr.includes("Failed to open project");
+
+    if (openingSuccessful) {
+      console.debug(`Successfully opened project`);
+      return ok(undefined);
+    }
+
+    return err(
+      new UnityProjectError(`Failed to open project: ${stderr || stdout}`, {
+        projectInfo,
+        stderr,
+        stdout,
+      })
+    );
   }
 }
 
