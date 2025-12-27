@@ -1,4 +1,6 @@
 import { Options, execa } from "execa";
+import { Result, ok, err } from "../errors/index.js";
+import { UnityCommandError } from "../errors/index.js";
 
 export interface CommandOptions extends Options {
   reject?: boolean;
@@ -9,8 +11,7 @@ export interface CommandOptions extends Options {
   cwd?: string;
 }
 
-export interface CommandResult {
-  success: boolean;
+export interface CommandOutput {
   stdout: string;
   stderr: string;
   exitCode?: number;
@@ -20,7 +21,7 @@ export async function executeCommand(
   executable: string,
   args: string[],
   options: CommandOptions = {}
-): Promise<CommandResult> {
+): Promise<Result<CommandOutput, UnityCommandError>> {
   try {
     const streamOutput = options.onStdout || options.onStderr;
 
@@ -63,18 +64,24 @@ export async function executeCommand(
 
     const { stdout, stderr, exitCode } = await subprocess;
 
-    return {
-      success: true,
+    return ok({
       stdout,
       stderr,
       exitCode,
-    };
+    });
   } catch (error: any) {
-    return {
-      success: false,
-      stdout: error.stdout ?? "",
-      stderr: error.stderr ?? String(error),
-      exitCode: error.exitCode,
-    };
+    const stdout = error.stdout ?? "";
+    const stderr = error.stderr ?? String(error);
+    const exitCode = error.exitCode;
+
+    return err(
+      new UnityCommandError(
+        `Command execution failed: ${executable} ${args.join(" ")}`,
+        stdout,
+        stderr,
+        exitCode,
+        { executable, args }
+      )
+    );
   }
 }
