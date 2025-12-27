@@ -10,7 +10,7 @@ import {
 } from "./types/unity.js";
 import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
 import { getUnityChangeset } from "unity-changeset";
-import { UnityHubInstallerEvent } from "./events/hubEventEmitter.ts";
+import { UnityHubInstallerEvent } from "./events/hubEventEmitter.js";
 
 /**
  * Class for interacting with Unity Hub via command line interface

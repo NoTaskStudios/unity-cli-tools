@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
-import { InstallerEventType, InstallerEvent, InstallerStatus } from "../types/unity.ts";
-import { UnityHubEventParser } from "./hubEventParser.ts";
+import { InstallerEventType, InstallerEvent, InstallerStatus } from "../types/unity.js";
+import { UnityHubEventParser } from "./hubEventParser.js";
 
 export interface InstallerEmitter extends EventEmitter {
   on(event: InstallerEventType.Progress, listener: (info: InstallerEvent[]) => void): this;

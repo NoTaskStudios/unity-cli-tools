@@ -1,4 +1,4 @@
-import { InstallerEvent, InstallerStatus } from "../types/unity.ts";
+import { InstallerEvent, InstallerStatus } from "../types/unity.js";
 
 export class UnityHubEventParser {
   private static errorPatterns = [/Error:.*/];
