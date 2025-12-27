@@ -3,3 +3,4 @@ export { default as UnityEditor } from "./unityEditor.js";
 export { UnityHubInstallerEvent } from "./events/hubEventEmitter.js";
 
 export * from "./types/unity.js";
+export * from "./errors/index.js";
