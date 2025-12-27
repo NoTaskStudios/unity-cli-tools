@@ -249,7 +249,7 @@ class UnityHub {
     });
 
     if (Object.keys(installations).length <= 0) {
-      return err(new UnityInstallationError("No unity installations found.", { filter }));
+      return err(new UnityInstallationError("No Unity installations found.", { filter }));
     }
 
     return ok(installations);
