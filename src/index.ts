@@ -1,5 +1,5 @@
-export { default as UnityHub } from "./unityHub.ts";
-export { default as UnityEditor } from "./unityEditor.ts";
-export { UnityHubInstallerEvent } from "./events/hubEventEmitter.ts";
+export { default as UnityHub } from "./unityHub.js";
+export { default as UnityEditor } from "./unityEditor.js";
+export { UnityHubInstallerEvent } from "./events/hubEventEmitter.js";
 
-export * from "./types/unity.ts";
+export * from "./types/unity.js";
