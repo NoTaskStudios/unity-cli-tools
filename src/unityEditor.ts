@@ -305,8 +305,12 @@ class UnityEditor {
   ): Promise<Result<void, UnityEditorNotFoundError | UnityCommandError | UnityLicenseError>> {
     console.debug(`Activating Unity license for version ${projectInfo.editorVersion}`);
 
-    if (!serial || !username || !password) {
-      return err(new UnityLicenseError('Missing required credentials', { projectInfo }));
+    const hasMissingCredentials = [serial, username, password].some(
+      (value) => value == null || value.trim().length === 0
+    );
+
+    if (hasMissingCredentials) {
+      return err(new UnityLicenseError("Missing required credentials", { projectInfo }));
     }
 
     const args = ["-quit", "-serial", serial, "-username", username, "-password", password];
