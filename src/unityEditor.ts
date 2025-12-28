@@ -67,9 +67,7 @@ class UnityEditor {
   public static getUnityExecutablePath(version: string): string {
     const platform = os.platform() as keyof typeof UnityEditor.UNITY_PATHS;
     const unityConfig = UnityEditor.UNITY_PATHS[platform];
-
-    const unityPath = path.join(unityConfig.base, version, unityConfig.executable);
-    return unityPath;
+    return path.join(unityConfig.base, version, unityConfig.executable);
   }
 
   /**
@@ -93,9 +91,8 @@ class UnityEditor {
   public static async isUnityVersionInstalled(version: string): Promise<boolean> {
     try {
       const unityPath = this.getUnityExecutablePath(version);
-      return fs.existsSync(unityPath);
+      return await fs.pathExists(unityPath);
     } catch (error) {
-      console.error(error);
       return false;
     }
   }
@@ -307,6 +304,10 @@ class UnityEditor {
     password: string
   ): Promise<Result<void, UnityEditorNotFoundError | UnityCommandError | UnityLicenseError>> {
     console.debug(`Activating Unity license for version ${projectInfo.editorVersion}`);
+
+    if (!serial || !username || !password) {
+      return err(new UnityLicenseError('Missing required credentials', { projectInfo }));
+    }
 
     const args = ["-quit", "-serial", serial, "-username", username, "-password", password];
 
