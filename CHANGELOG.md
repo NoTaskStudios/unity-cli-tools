@@ -1,3 +1,21 @@
+# [2.0.0](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.1.2...2.0.0) (2025-12-28)
+
+
+### Bug Fixes
+
+* **unityHub:** correct typo in error message ([b5a722b](https://github.com/NoTaskStudios/unity-cli-tools/commit/b5a722b9243a98523dc4f5679ab1c8323a7f5070))
+
+
+### Features
+
+* Export error utilities from package entrypoint ([278f629](https://github.com/NoTaskStudios/unity-cli-tools/commit/278f629e63b701435a2a42513004afe5e986d98a))
+* Introduce Result<T, E> type and UnityError hierarchy ([74b91ba](https://github.com/NoTaskStudios/unity-cli-tools/commit/74b91baa0a84f8b512076aaee6a34d3c7f80525c))
+
+
+### BREAKING CHANGES
+
+* Functions that previously threw exceptions now return `Result<T, E>`.
+
 ## [1.1.2](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.1.1...1.1.2) (2025-05-04)
 
 
