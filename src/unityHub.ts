@@ -8,9 +8,19 @@ import {
   UnityHubProjectsList,
   UnityInstallations,
 } from "./types/unity.js";
-import { CommandOptions, CommandResult, executeCommand } from "./utils/commandExecutor.js";
+import { CommandOptions, CommandOutput, executeCommand } from "./utils/commandExecutor.js";
 import { getUnityChangeset } from "unity-changeset";
 import { UnityHubInstallerEvent } from "./events/hubEventEmitter.js";
+import {
+  Result,
+  ok,
+  err,
+  UnityHubNotFoundError,
+  UnityCommandError,
+  UnityInstallationError,
+  UnityProjectError,
+  InvalidArgumentError,
+} from "./errors/index.js";
 
 /**
  * Class for interacting with Unity Hub via command line interface
@@ -106,104 +116,143 @@ class UnityHub {
    * @param {number} [options.timeout] - Timeout in milliseconds
    * @param {Record<string, string>} [options.env] - Environment variables
    * @param {string} [options.cwd] - Working directory
-   * @returns {Promise<CommandResult>} Object containing command execution results
-   * @throws Will return error information in the result object rather than throwing
+   * @returns {Promise<Result<CommandOutput>>} Result containing command execution output or error
    * @public
    */
-  public static async execUnityHubCommand(args: string[], options: CommandOptions = {}): Promise<CommandResult> {
+  public static async execUnityHubCommand(
+    args: string[],
+    options: CommandOptions = {}
+  ): Promise<Result<CommandOutput, UnityHubNotFoundError | UnityCommandError>> {
     const isAvailable = await UnityHub.isUnityHubAvailable();
     if (!isAvailable) {
       console.error("Unity Hub is not available.");
-      return {
-        success: false,
-        stdout: "",
-        stderr: "Unity Hub is not available.",
-        exitCode: -1,
-      };
+      return err(new UnityHubNotFoundError("Unity Hub is not available", { hubPath: this.hubPath }));
     }
 
-    try {
-      const hubArgs = [this.platform !== "linux" ? "--" : "", "--headless", ...args].filter(Boolean);
-      console.debug(`Executing Unity Hub command: ${this.hubPath} ${hubArgs.join(" ")}`);
+    const hubArgs = [this.platform !== "linux" ? "--" : "", "--headless", ...args].filter(Boolean);
+    console.debug(`Executing Unity Hub command: ${this.hubPath} ${hubArgs.join(" ")}`);
 
-      return await executeCommand(this.hubPath, hubArgs, options);
-    } catch (error) {
-      console.error("Error executing Unity Hub command:", error);
-      return {
-        success: false,
-        stdout: "",
-        stderr: String(error),
-        exitCode: -1,
-      };
-    }
+    return await executeCommand(this.hubPath, hubArgs, options);
   }
 
   /**
    * Gets the Unity Hub installation path
-   * @returns {Promise<string>} Path to Unity Hub installation
-   * @throws Will return empty string on error
+   * @returns {Promise<Result<string>>} Result containing the installation path or error
    * @public
    */
-  public static async getInstallPath(): Promise<string> {
-    const { stdout, stderr } = await this.execUnityHubCommand(["install-path", "-g"], {
+  public static async getInstallPath(): Promise<Result<string, UnityHubNotFoundError | UnityCommandError>> {
+    const result = await this.execUnityHubCommand(["install-path", "-g"], {
       reject: false,
     });
-    if (stderr) {
-      throw new Error(`Error getting install path: ${stderr}`);
+
+    if (!result.success) {
+      return result;
     }
 
-    return stdout;
+    if (result.value.stderr) {
+      return err(
+        new UnityCommandError(
+          `Error getting install path: ${result.value.stderr}`,
+          result.value.stdout,
+          result.value.stderr,
+          result.value.exitCode
+        )
+      );
+    }
+
+    return ok(result.value.stdout.trim());
   }
 
   /**
    * Sets the Unity Hub installation path
    * @param {string} path - Path to set as the Unity Hub installation directory
-   * @returns {Promise<void>} Resolves when the installation path is set successfully
-   * @throws Will throw an error if command execution fails
+   * @returns {Promise<Result<void>>} Result indicating success or error
    * @public
    */
-  public static async setInstallPath(path: string): Promise<void> {
-    const { stdout, stderr } = await this.execUnityHubCommand(["install-path", "-s", path], {
+  public static async setInstallPath(
+    path: string
+  ): Promise<Result<void, UnityHubNotFoundError | UnityCommandError>> {
+    const result = await this.execUnityHubCommand(["install-path", "-s", path], {
       reject: false,
     });
-    if (stderr) {
-      throw new Error(`Error setting install path: ${stderr}`);
+
+    if (!result.success) {
+      return result;
     }
-    console.debug(`Install path set to: ${stdout}`);
+
+    if (result.value.stderr) {
+      return err(
+        new UnityCommandError(
+          `Error setting install path: ${result.value.stderr}`,
+          result.value.stdout,
+          result.value.stderr,
+          result.value.exitCode
+        )
+      );
+    }
+
+    console.debug(`Install path set to: ${result.value.stdout}`);
+    return ok(undefined);
   }
 
   /**
    * Gets all installed Unity versions with their installation paths, if using filter you can get all available releases instead of only installed ones
    * @param {string} [filter="i"] - Filter for installations (e.g. "i" for installed ( both available releases and Editors installed on your machine ), "a" for all and "r" for available releases)
-   * @returns {Promise<UnityInstallations>} Object mapping Unity versions to their installation paths
-   * @throws Will throw an error if command execution fails or no installations are found
+   * @returns {Promise<Result<UnityInstallations>>} Result containing object mapping Unity versions to their installation paths or error
    * @public
    */
-  public static async getUnityInstallations(filter: string = "i"): Promise<UnityInstallations> {
+  public static async getUnityInstallations(
+    filter: string = "i"
+  ): Promise<Result<UnityInstallations, InvalidArgumentError | UnityHubNotFoundError | UnityCommandError | UnityInstallationError>> {
     if (!["i", "a", "r"].includes(filter)) {
-      throw new Error(`Invalid filter "${filter}". Use "i" for installed, "a" for all, or "r" for available releases.`);
+      return err(
+        new InvalidArgumentError(
+          `Invalid filter "${filter}". Use "i" for installed, "a" for all, or "r" for available releases.`,
+          { filter, validFilters: ["i", "a", "r"] }
+        )
+      );
     }
 
-    const { stdout, stderr } = await this.execUnityHubCommand(["editors", `-${filter}`], {
+    const result = await this.execUnityHubCommand(["editors", `-${filter}`], {
       reject: false,
     });
 
+    if (!result.success) {
+      return result;
+    }
+
+    const { stdout, stderr } = result.value;
     const isSuccess = stdout.includes(", installed at");
-    if (stderr) throw new Error(`Get installations command warning/error: ${stderr}`);
-    if (!isSuccess) throw new Error(`Consider install a Unity version using Unity Hub.`);
+
+    if (stderr) {
+      return err(
+        new UnityCommandError(`Get installations command warning/error: ${stderr}`, stdout, stderr, result.value.exitCode)
+      );
+    }
+
+    if (!isSuccess) {
+      return err(
+        new UnityInstallationError("No Unity installations found. Consider installing a Unity version using Unity Hub.", {
+          filter,
+        })
+      );
+    }
 
     const lines = stdout.split(/\r\n|\n/);
     const installations: UnityInstallations = {};
 
     lines.forEach((line: string) => {
       const [version, unityPath] = line.split(", installed at").map((entry: string) => entry.trim());
-
-      installations[version] = unityPath;
+      if (version && unityPath) {
+        installations[version] = unityPath;
+      }
     });
 
-    if (Object.keys(installations).length <= 0) throw new Error("No unity installations found.");
+    if (Object.keys(installations).length <= 0) {
+      return err(new UnityInstallationError("No Unity installations found.", { filter }));
+    }
 
-    return installations;
+    return ok(installations);
   }
 
   /**
@@ -211,145 +260,149 @@ class UnityHub {
    * @param {string} editorVersion - Unity version to add modules to (e.g. "2022.3.60f1")
    * @param {ModuleId[]} modules - Array of module IDs to add
    * @param {boolean} [childModules=false] - Whether to include child modules
-   * @returns {UnityHubInstallerEvent} Event emitter for installation progress
-   * @throws Will throw an error if module addition fails
+   * @returns {Result<UnityHubInstallerEvent>} Result containing event emitter for installation progress or error
    * @public
    */
   public static async addModule(
     editorVersion: string,
     modules: ModuleId[],
     childModules: boolean = true
-  ): Promise<UnityHubInstallerEvent> {
-    try {
-      console.debug(`Adding module ${modules} to Unity ${editorVersion}`);
+  ): Promise<Result<UnityHubInstallerEvent, InvalidArgumentError>> {
+    if (modules.length === 0) {
+      return err(new InvalidArgumentError("No module IDs provided.", { editorVersion, modules }));
+    }
 
-      const args = ["install-modules", "-v", editorVersion];
+    console.debug(`Adding module ${modules} to Unity ${editorVersion}`);
 
-      if (modules.length > 0) {
-        args.push(...["--module", modules.join(" ")]);
+    const args = ["install-modules", "-v", editorVersion, "--module", modules.join(" ")];
 
-        if (childModules) {
-          args.push("--child-modules");
+    if (childModules) {
+      args.push("--child-modules");
+    }
+
+    const installerEmitter = new UnityHubInstallerEvent();
+
+    this.execUnityHubCommand(args, {
+      reject: false,
+      onStdout: (data: string) => installerEmitter.Progress(data),
+    })
+      .then((result) => {
+        if (!result.success) {
+          console.error(`Error adding module ${modules} to Unity ${editorVersion}:`, result.error);
         }
-      } else {
-        throw new Error("No module IDs provided.");
-      }
-
-      const installerEmitter = new UnityHubInstallerEvent();
-      this.execUnityHubCommand(args, {
-        reject: false,
-        //onStderr: (data: string) => installerEmitter.Progress(data),
-        onStdout: (data: string) => installerEmitter.Progress(data),
-      }).catch((error) => {
+      })
+      .catch((error) => {
         console.error(`Error adding module ${modules} to Unity ${editorVersion}:`, error);
       });
-      return installerEmitter;
-    } catch (error) {
-      console.error(`Error adding module ${modules} to Unity ${editorVersion}:`, error);
-      throw error;
-    }
+
+    return ok(installerEmitter);
   }
 
   /**
    * Installs a Unity Editor version
    * @param {string} version - Unity version to install (e.g. "2022.3.60f1")
-   * @param {string} [changeset] - Optional specific changeset to install
    * @param {ModuleId[]} [modules=[]] - Optional array of modules to install with the editor
-   * @param {EditorArchitecture} [architecture=EditorArchitecture.x86_64] - Optional architecture (x86_64 or arm64)
-   * @returns {UnityHubInstallerEvent} Event emitter for installation progress
-   * @throws Will throw an error if installation fails to start
+   * @param {EditorArchitecture} [architecture] - Optional architecture (x86_64 or arm64), defaults to system architecture
+   * @returns {Promise<Result<UnityHubInstallerEvent>>} Result containing event emitter for installation progress or error
    * @public
    */
   public static async addEditor(
     version: string,
     modules: ModuleId[] = [],
     architecture?: EditorArchitecture
-  ): Promise<UnityHubInstallerEvent> {
+  ): Promise<Result<UnityHubInstallerEvent, UnityInstallationError>> {
     try {
       const data = await getUnityChangeset(version);
-      const args = ["install", "-v", version];
-
-      args.push("--changeset", data.changeset);
+      const args = ["install", "-v", version, "--changeset", data.changeset];
 
       if (modules.length > 0) {
-        args.push("--module");
-        args.push(modules.join(" "));
+        args.push("--module", modules.join(" "));
       }
 
       if (!architecture) {
         const arch = os.arch() || process.arch;
-        const defaultArchitecture =
-          arch === "arm64" || arch === "arm" ? EditorArchitecture.arm64 : EditorArchitecture.x86_64;
-        architecture = defaultArchitecture;
+        architecture = arch === "arm64" || arch === "arm" ? EditorArchitecture.arm64 : EditorArchitecture.x86_64;
       }
 
       args.push("--architecture", architecture);
 
       const installerEmitter = new UnityHubInstallerEvent();
+
       this.execUnityHubCommand(args, {
         reject: false,
-        //onStderr: (data: string) => installerEmitter.Error(data),
         onStdout: (data: string) => installerEmitter.Progress(data),
-      }).catch((error) => {
-        console.error(`Error installing Unity ${version}:`, error);
-      });
+      })
+        .then((result) => {
+          if (!result.success) {
+            console.error(`Error installing Unity ${version}:`, result.error);
+          }
+        })
+        .catch((error) => {
+          console.error(`Error installing Unity ${version}:`, error);
+        });
 
-      return installerEmitter;
+      return ok(installerEmitter);
     } catch (error) {
       console.error(error);
-      throw error;
+      return err(
+        new UnityInstallationError(`Failed to install Unity ${version}: ${String(error)}`, { version, modules, architecture })
+      );
     }
   }
 
   /**
    * Gets list of projects from Unity Hub
-   * @returns {Promise<Array<{name: string, path: string, version: string}>>} Array of projects
-   * @throws Will not throw errors, returns empty array on failure
+   * @returns {Promise<Result<Array<{name: string, path: string, version: string}>>>} Result containing array of projects or error
    * @public
    */
-  public static async getProjects(): Promise<{ name: string; path: string; version: string }[]> {
+  public static async getProjects(): Promise<
+    Result<{ name: string; path: string; version: string }[], UnityProjectError>
+  > {
     try {
       const projectsPath = this.getProjectsPath();
 
       if (!projectsPath || !fs.existsSync(projectsPath)) {
         console.debug(`Projects file not found at: ${projectsPath}`);
-        return [];
+        return err(
+          new UnityProjectError(`Projects file not found at: ${projectsPath}`, { projectsPath })
+        );
       }
 
       const projectsData: UnityHubProjectsList = await fs.readJson(projectsPath);
       const projects = Object.values(projectsData.data);
 
-      return projects.map((project: UnityHubProject) => ({
+      const mappedProjects = projects.map((project: UnityHubProject) => ({
         name: project.title,
         path: project.path,
         version: project.version,
       }));
+
+      return ok(mappedProjects);
     } catch (error) {
       console.error("Error getting recent projects:", error);
-      return [];
+      return err(new UnityProjectError(`Failed to get projects: ${String(error)}`));
     }
   }
 
   /**
    * Gets the default project directory configured in Unity Hub
-   * @returns {Promise<string|null>} Path to default project directory or null if not found
-   * @throws Will not throw errors, returns null on failure
+   * @returns {Promise<Result<string | null>>} Result containing path to default project directory or null if not configured
    * @public
    */
-  public static async getDefaultProjectsDirectory(): Promise<string | null> {
+  public static async getDefaultProjectsDirectory(): Promise<Result<string | null, UnityProjectError>> {
     try {
       const projectDirPath = this.getProjectDirPath();
 
       if (!projectDirPath || !fs.existsSync(projectDirPath)) {
         console.debug(`Project directory file not found at: ${projectDirPath}`);
-        return null;
+        return ok(null);
       }
 
       const projectDirData = await fs.readJson(projectDirPath);
-      return projectDirData.directoryPath ?? null;
+      return ok(projectDirData.directoryPath ?? null);
     } catch (error) {
       console.error("Error getting default project directory:", error);
-      return null;
+      return err(new UnityProjectError(`Failed to get default project directory: ${String(error)}`));
     }
   }
 }
