@@ -1,3 +1,11 @@
+## [2.0.1](https://github.com/NoTaskStudios/unity-cli-tools/compare/2.0.0...2.0.1) (2025-12-28)
+
+
+### Bug Fixes
+
+* Improve Unity version checks and license activation ([bf8932c](https://github.com/NoTaskStudios/unity-cli-tools/commit/bf8932c578c5642b5df28e987c57293b3385b9b2))
+* validation check for potentially causing misleading error ([1c22979](https://github.com/NoTaskStudios/unity-cli-tools/commit/1c22979c5a800e930d21488b4f0166d2c283098d))
+
 # [2.0.0](https://github.com/NoTaskStudios/unity-cli-tools/compare/1.1.2...2.0.0) (2025-12-28)
 
 
